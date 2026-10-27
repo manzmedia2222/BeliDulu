@@ -11,6 +11,7 @@
 <meta name="author" content="BeliDulu">
 <link rel="icon" type="image/png" href="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
 <link rel="apple-touch-icon" href="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
+<link rel="manifest" href="./manifest.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="BeliDulu">
 <meta property="og:locale" content="id_ID">
@@ -198,6 +199,25 @@ details.order summary::-webkit-details-marker{display:none}
   .grid{grid-template-columns:repeat(2,1fr);gap:12px}
   .card .bd{padding:10px}
 }
+
+/* Fitur tambahan BeliDulu */
+.toolbar{align-items:center}.sort-select{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface);color:var(--ink);font:inherit;max-width:100%}
+.price-old{font-size:12px;color:var(--muted);text-decoration:line-through;margin-right:6px}.discount-tag{display:inline-block;background:#fff0e6;color:#a94c12;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:5px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:10px 0 16px}.plan-card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}.plan-card strong{display:block}.plan-card .plan-price{font-size:18px;font-weight:600;margin:5px 0}.seller-plan-note{font-size:12px;color:var(--muted)}.similar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}.similar-grid .card{min-width:0}
+body.dark{--bg:#111827;--surface:#1f2937;--ink:#f3f4f6;--muted:#aab5c5;--line:#374151;--soft:#263449;--soft2:#182231;--primary:#8eb7f1;--primary-d:#b7d1f5}
+
+/* Fitur tambahan BeliDulu */
+.toolbar .sortbox{max-width:190px;min-width:150px}
+.promo-banner{padding:16px 18px;margin:12px 0 18px;border-radius:8px;background:var(--primary-d);color:#fff}
+.promo-banner a{color:#fff;text-decoration:underline}
+.price-old{font-size:13px;color:var(--muted);text-decoration:line-through;margin-right:6px}
+.discount-tag{display:inline-block;background:#e7f4ec;color:#236343;border-radius:4px;padding:2px 6px;font-size:11px;margin-left:6px}
+.feature-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.feature-actions .btn{font-size:13px;padding:7px 10px}
+body.dark-mode{--bg:#111827;--surface:#1f2937;--ink:#f3f4f6;--muted:#aab6c6;--line:#374151;--primary:#91b7e6;--primary-d:#c5dcfa;--soft:#27364a;--soft2:#172131;color:var(--ink)}
+body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#111827;color:#f3f4f6;border-color:#374151}
+body.dark-mode .qty button{background:#1f2937;color:#c5dcfa}
+@media(max-width:640px){.toolbar .sortbox{max-width:none;width:100%}}
 </style>
 </head>
 <body>
@@ -210,9 +230,10 @@ details.order summary::-webkit-details-marker{display:none}
     <nav>
       <a href="#/" data-nav="">Produk</a>
       <a href="#/favorit" data-nav="favorit">Favorit</a>
+      <a href="#/keranjang" data-nav="keranjang">Keranjang <span id="cartCount"></span></a>
       <a href="#/pesanan" data-nav="pesanan">Pesanan saya</a>
       <a href="#/jual" data-nav="jual">Jual</a>
-      <span id="acct"></span>
+      <button class="btn ghost sm" type="button" data-act="theme" aria-label="Ganti tema">◐ Tema</button><span id="acct"></span>
     </nav>
   </div>
 </header>
@@ -246,7 +267,7 @@ const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 
 /* ====== Pengaturan dasar ====== */
-const APP_BUILD = 2026102702;             // naikkan angka ini setiap kali file website diperbarui
+const APP_BUILD = 2026102703;             // naikkan angka ini setiap kali file website diperbarui
 const ADMIN_PASSWORD = "BeliDuluajaya";   // ubah di sini jika ingin mengganti kata sandi pengelola
 const STATUSES = ['Menunggu konfirmasi','Diproses','Dikirim','Sampai','Selesai','Dibatalkan'];
 const CANCELABLE = ['Menunggu konfirmasi','Diproses'];
@@ -332,16 +353,21 @@ const initIps = root => $$('.ip', root).forEach(updateIp);
 /* ====== State ====== */
 const S = {
   products: [], ready: false, err: '',
-  settings: { storeName: 'BeliDulu', tagline: 'Belanja praktis tanpa perlu membuat akun.', footerNote: '', waNumbers: [], sellerApproval: false,
+  settings: { storeName: 'BeliDulu', tagline: 'Belanja praktis tanpa perlu membuat akun.', footerNote: '', waNumbers: [], sellerApproval: false, promoBanner: '', developerWhatsApp: '082254388144', paymentInfo: '', lowStockThreshold: 5,
     seoDescription: 'BeliDulu adalah toko online praktis. Belanja tanpa perlu membuat akun, isi alamat, dan pesanan langsung dikonfirmasi lewat WhatsApp.',
     seoKeywords: 'BeliDulu, beli dulu, toko online, belanja online, beli online tanpa akun, belanja lewat WhatsApp, toko online Indonesia, produk murah, pesan online, kirim ke seluruh Indonesia, jual online, jadi penjual' },
-  search: '', cat: 'Semua', cur: null, curSeller: null,
+  search: '', cat: 'Semua', sort: 'newest', cur: null, curSeller: null,
   admin: sessionStorage.getItem('bd_admin') === '1',
   tab: 'orders', orders: [], ordFilter: 'Semua', ordQ: '', openOrders: new Set(),
   my: {}, unsubOrders: null,
   user: null, profile: null, authReady: false, users: {},
   stab: 'products', sellerOrders: [], unsubSeller: null
 };
+const getCart = () => { try { return JSON.parse(localStorage.getItem('bd_cart') || '[]'); } catch(e) { return []; } };
+const saveCart = list => localStorage.setItem('bd_cart', JSON.stringify(list));
+const addCart = id => { const list=getCart(); const found=list.find(x=>x.id===id); if(found) found.qty=Math.min(99,(found.qty||1)+1); else list.push({id,qty:1}); saveCart(list); toast('Produk ditambahkan ke keranjang.'); };
+function renderCartCount(){const el=$('#cartCount');if(el){const n=getCart().reduce((a,x)=>a+(+x.qty||1),0);el.textContent=n?`(${n})`:'';}}
+function viewCart(){const list=getCart().map(x=>({...x,product:S.products.find(p=>p.id===x.id)})).filter(x=>x.product&&visible(x.product));const total=list.reduce((a,x)=>a+(Number(x.product.discountPrice&&x.product.discountPrice<x.product.price?x.product.discountPrice:x.product.price)||0)*(+x.qty||1),0);app.innerHTML=`<div class="backrow"><a class="btn ghost sm" href="#/">Kembali belanja</a></div><h1>Keranjang</h1><p class="muted">Total sementara: <strong>${rupiah(total)}</strong></p><div class="panel">${list.length?list.map(x=>`<div class="list-row">${imgTag((x.product.images||[])[0],x.product.name,'thumb')}<div class="grow"><strong>${esc(x.product.name)}</strong><div class="muted small">${rupiah(x.product.discountPrice&&x.product.discountPrice<x.product.price?x.product.discountPrice:x.product.price)} × ${x.qty||1}</div><a href="#/beli/${esc(x.product.id)}">Checkout produk ini</a></div><button class="linkbtn danger" data-act="cart-remove" data-id="${esc(x.id)}">Hapus</button></div>`).join(''):'<div class="empty">Keranjang masih kosong. <a href="#/">Cari produk</a></div>'}</div>${list.length?'<p class="small muted" style="margin-top:12px">Checkout saat ini dilakukan per produk, jadi pesanan gabungan beberapa produk belum didukung.</p><button class="btn ghost" data-act="cart-clear">Kosongkan keranjang</button>':''}`;}
 const getMyCodes = () => { try { return JSON.parse(localStorage.getItem('bd_orders') || '[]'); } catch (e) { return []; } };
 const addMyCode = c => { const l = getMyCodes(); if (!l.includes(c)) { l.unshift(c); localStorage.setItem('bd_orders', JSON.stringify(l.slice(0, 50))); } };
 const app = $('#app');
@@ -430,6 +456,7 @@ onSnapshot(doc(db, 'settings', 'app'), snap => {
 }, () => {});
 
 function applySettings() {
+  document.body.classList.toggle('dark-mode', localStorage.getItem('bd_theme') === 'dark');
   const n = S.settings.storeName || 'BeliDulu';
   $('#brand').textContent = n; $('#footName').textContent = n;
   $('#footNote').textContent = S.settings.footerNote || '';
@@ -470,9 +497,11 @@ function route() {
   $$('nav a[data-nav]').forEach(a => a.classList.toggle('on', a.dataset.nav === page));
   document.title = (S.settings.storeName || 'BeliDulu') + (page === '' ? ' - Toko Online Praktis Tanpa Akun' : '');
   if (page === 'produk') viewProduct(arg);
+  else if (page === 'toko') viewStorefront(arg);
   else if (page === 'beli') viewCheckout(arg);
   else if (page === 'pesanan') viewOrders();
   else if (page === 'favorit') viewWish();
+  else if (page === 'keranjang') viewCart();
   else if (page === 'jual') viewSeller();
   else if (page === 'admin') viewAdmin();
   else viewHome();
@@ -486,17 +515,21 @@ function viewHome() {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
   app.innerHTML = `${errBanner()}
   <section class="intro"><h1>Produk</h1><p>${esc(cleanTagline(S.settings.tagline))}</p></section>
-  <div class="toolbar"><input id="q" type="search" placeholder="Cari produk" aria-label="Cari produk" value="${esc(S.search)}"><div class="chips" id="cats"></div></div>
+  ${S.settings.promoBanner ? `<div class="promo-banner">${esc(S.settings.promoBanner)}</div>` : ''}
+  <div class="toolbar"><input id="q" type="search" placeholder="Cari produk" aria-label="Cari produk" value="${esc(S.search)}"><select id="sortProducts" class="sort-select" aria-label="Urutkan produk"><option value="new">Terbaru</option><option value="cheap">Harga terendah</option><option value="expensive">Harga tertinggi</option><option value="popular">Terlaris/populer</option><option value="rating">Rating tertinggi</option></select><button class="btn ghost sm" type="button" data-act="dark-toggle">Mode gelap</button><div class="chips" id="cats"></div></div>
   <div class="grid" id="grid"></div>`;
   renderGrid();
 }
+function editDistance(a,b){a=a.slice(0,80);b=b.slice(0,80);const row=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let prev=row[0];row[0]=i;for(let j=1;j<=b.length;j++){const old=row[j];row[j]=Math.min(row[j]+1,row[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));prev=old;}}return row[b.length];}
 function renderGrid() {
   const active = S.products.filter(visible);
   const cats = ['Semua', ...new Set(active.map(p => (p.category || '').trim()).filter(Boolean))];
   if (!cats.includes(S.cat)) S.cat = 'Semua';
   $('#cats').innerHTML = cats.length > 1 ? cats.map(c => `<button class="chip${c === S.cat ? ' on' : ''}" data-act="cat" data-v="${esc(c)}">${esc(c)}</button>`).join('') : '';
   const q = S.search.trim().toLowerCase();
-  const list = active.filter(p => (S.cat === 'Semua' || p.category === S.cat) && (!q || (p.name || '').toLowerCase().includes(q)));
+  let list = active.filter(p => (S.cat === 'Semua' || p.category === S.cat) && (!q || (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q) || editDistance((p.name||'').toLowerCase(),q)<=Math.max(1,Math.floor(q.length/4))));
+  const sort = $('#sortProducts')?.value || 'new';
+  list.sort((a,b)=> sort==='cheap' ? (a.price||0)-(b.price||0) : sort==='expensive' ? (b.price||0)-(a.price||0) : sort==='popular' ? ((b.sales||b.soldCount||0)-(a.sales||a.soldCount||0)) : sort==='rating' ? avgOf(b)-avgOf(a) : (b.createdAt||b.updatedAt||0)-(a.createdAt||a.updatedAt||0));
   $('#grid').innerHTML = list.length ? list.map(cardHTML).join('') :
     `<div class="empty" style="grid-column:1/-1">${active.length ? 'Produk tidak ditemukan.' : 'Belum ada produk.'}</div>`;
 }
@@ -508,12 +541,12 @@ function cardHTML(p) {
       <button class="wish${on ? ' on' : ''}" data-act="wish" data-id="${esc(p.id)}" aria-pressed="${on}" aria-label="Simpan ke favorit">${heart}</button></div>
     <div class="bd">
       <a class="nm" href="#/produk/${esc(p.id)}">${esc(p.name)}</a>
-      ${p.sellerName ? `<div class="small muted">oleh ${esc(p.sellerName)}</div>` : ''}
+      ${p.sellerName ? `<div class="small muted">oleh <a href="#/toko/${esc(p.sellerId || '')}">${esc(p.sellerName)}</a></div>` : ''}
       <div class="rate">${p.ratingCount ? `<span class="stars">${stars(avg)}</span><span>${avg.toFixed(1)} (${p.ratingCount})</span>` : ''}</div>
-      <div class="price">${rupiah(p.price)}</div>
+      <div>${p.discountPrice && Number(p.discountPrice)<Number(p.price) ? `<span class="discount-tag">Diskon ${Math.round((1-Number(p.discountPrice)/Number(p.price))*100)}%</span><div><span class="price-old">${rupiah(p.price)}</span><span class="price">${rupiah(p.discountPrice)}</span></div>` : `<div class="price">${rupiah(p.price)}</div>`}</div>
       <div class="price-note">(belum termasuk ongkir)</div>
       <div class="sp"></div>
-      ${out ? '<span class="btn off block">Stok habis</span>' : `<a class="btn block" href="#/beli/${esc(p.id)}">Beli</a>`}
+      ${out ? `<button class="btn ghost block" data-act="stock-alert" data-id="${esc(p.id)}">Ingatkan saat tersedia</button>` : `<div class="actions"><button class="btn ghost sm" data-act="add-cart" data-id="${esc(p.id)}">+ Keranjang</button><a class="btn block" href="#/beli/${esc(p.id)}">${p.preorder ? 'Preorder' : 'Beli'}</a></div>`}<div class="feature-actions"><button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan</button><button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan</button></div>
     </div></article>`;
 }
 
@@ -531,6 +564,13 @@ function renderWishPage() {
   g.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty" style="grid-column:1/-1">Belum ada produk favorit.<br><a href="#/">Lihat produk</a></div>';
 }
 
+function viewStorefront(uid) {
+  if (!S.ready) { app.innerHTML = loadingHTML; return; }
+  const mine = S.products.filter(p => p.sellerId === uid && visible(p));
+  const name = mine[0]?.sellerName || 'Toko penjual';
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div><section class="panel"><h1>${esc(name)}</h1><p class="muted">Etalase produk penjual</p><div class="grid">${mine.length ? mine.map(cardHTML).join('') : '<div class="empty">Toko ini belum memiliki produk aktif.</div>'}</div></section>`;
+}
+
 /* ====== Detail produk + ulasan ====== */
 function viewProduct(id) {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
@@ -546,7 +586,7 @@ function viewProduct(id) {
     <div class="info">
       <h1>${esc(p.name)}</h1>
       <div class="rate" style="margin-bottom:10px">${p.ratingCount ? `<span class="stars">${stars(avg)}</span><span>${avg.toFixed(1)} dari ${p.ratingCount} ulasan</span>` : '<span>Belum ada ulasan</span>'}</div>
-      <div class="price">${rupiah(p.price)}</div>
+      <div>${p.discountPrice && Number(p.discountPrice)<Number(p.price) ? `<span class="discount-tag">Diskon ${Math.round((1-Number(p.discountPrice)/Number(p.price))*100)}%</span><div><span class="price-old">${rupiah(p.price)}</span><span class="price">${rupiah(p.discountPrice)}</span></div>` : `<div class="price">${rupiah(p.price)}</div>`}</div>
       <div class="price-note" style="margin-bottom:14px">(belum termasuk ongkir)</div>
       ${p.category ? `<p class="small muted">Kategori: ${esc(p.category)}</p>` : ''}
       ${typeof p.stock === 'number' ? `<p class="small muted">Stok: ${p.stock > 0 ? p.stock : 'habis'}</p>` : ''}
@@ -554,10 +594,14 @@ function viewProduct(id) {
       <div class="actions" style="margin-top:0">
         ${out ? '<span class="btn off">Stok habis</span>' : `<a class="btn" href="#/beli/${esc(p.id)}">Beli</a>`}
         <button class="btn ghost wishbtn${on ? ' on' : ''}" data-act="wish" data-id="${esc(p.id)}" aria-pressed="${on}">${wishLabel(on)}</button>
+        <button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan produk</button>
+        <button class="btn ghost" data-act="ask-seller" data-id="${esc(p.id)}">Tanya penjual</button>
+        <button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan produk</button>
       </div>
       <div class="desc">${esc(p.description || 'Belum ada deskripsi.')}</div>
     </div>
   </div>
+  ${S.products.filter(x => x.id !== p.id && visible(x) && ((p.category && x.category === p.category) || (p.sellerId && x.sellerId === p.sellerId))).slice(0,4).length ? `<section class="panel" style="margin-top:24px"><h2>Produk serupa</h2><div class="similar-grid">${S.products.filter(x => x.id !== p.id && visible(x) && ((p.category && x.category === p.category) || (p.sellerId && x.sellerId === p.sellerId))).slice(0,4).map(cardHTML).join('')}</div></section>` : ''}
   <section class="panel" style="margin-top:34px" id="reviews">
     <h2>Ulasan</h2>
     <div class="rev-list" id="revList"><p class="muted">Memuat ulasan...</p></div>
@@ -571,6 +615,7 @@ function viewProduct(id) {
           <div class="star-input" id="rIn">${[1,2,3,4,5].map(n => `<button type="button" data-act="rate" data-v="${n}" aria-label="${n} bintang"><svg viewBox="0 0 24 24" width="26" height="26" class="star"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/></svg></button>`).join('')}</div>
           <input type="hidden" name="rating" value="0"></div>
       </div>
+      <div class="field"><label>Kode pesanan selesai (untuk lencana pembeli terverifikasi)</label><input name="orderCode" placeholder="BD-... (opsional)"></div>
       <div class="field"><label>Komentar</label><textarea name="comment" maxlength="800" placeholder="Ceritakan pengalaman Anda"></textarea></div>
       <div class="field"><label>Foto (opsional): tempel link atau kode dari imgbb</label>${imgPicker('photos', [], { max: 4 })}${IMG_STEPS}</div>
       <button class="btn" type="submit">Kirim ulasan</button>
@@ -588,7 +633,7 @@ async function loadReviews(pid) {
   try {
     const snap = await getDocs(query(collection(db, 'reviews'), where('productId', '==', pid)));
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
-    box.innerHTML = list.length ? list.map(r => `<div class="rev"><div class="meta"><strong>${esc(r.name)}</strong><span class="stars">${stars(r.rating)}</span><span class="muted small">${fmtDate(r.createdAt)}</span></div>
+    box.innerHTML = list.length ? list.map(r => `<div class="rev"><div class="meta"><strong>${esc(r.name)}</strong>${r.verified ? '<span class="badge done">Pembeli terverifikasi</span>' : ''}<span class="stars">${stars(r.rating)}</span><span class="muted small">${fmtDate(r.createdAt)}</span></div>
       ${r.comment ? `<div class="pre">${esc(r.comment)}</div>` : ''}
       ${(r.photos || []).length ? `<div class="rev-photos">${r.photos.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">${imgTag(u, 'Foto ulasan')}</a>`).join('')}</div>` : ''}</div>`).join('')
       : '<p class="muted">Belum ada ulasan. Jadilah yang pertama.</p>';
@@ -596,14 +641,16 @@ async function loadReviews(pid) {
 }
 async function submitReview(form) {
   const f = new FormData(form); const pid = form.dataset.id; const ip = $('.ip', form);
-  const rating = parseInt(f.get('rating')) || 0; const name = (f.get('name') || '').trim();
+  const rating = parseInt(f.get('rating')) || 0; const name = (f.get('name') || '').trim(); const orderCode = (f.get('orderCode') || '').toString().trim().toUpperCase();
   if (!name) return toast('Nama wajib diisi.');
   if (rating < 1) return toast('Pilih jumlah bintang terlebih dahulu.');
   if (ipInvalid(ip)) return toast('Ada link foto yang tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  let verified = false;
+  if (orderCode) { try { const os = await getDoc(doc(db,'orders',orderCode)); if (os.exists()) { const od=os.data(); verified = od.productId===pid && ['Sampai','Selesai'].includes(od.status); if (!verified) return toast('Kode pesanan belum cocok dengan produk atau belum selesai.'); } else return toast('Kode pesanan tidak ditemukan.'); } catch(e) { return toast('Kode pesanan tidak dapat diverifikasi.'); } }
   const photos = ipValues(ip);
   const btn = $('button[type=submit]', form); btn.disabled = true;
   try {
-    await addDoc(collection(db, 'reviews'), { productId: pid, name, rating, comment: (f.get('comment') || '').trim(), photos, createdAt: Date.now() });
+    await addDoc(collection(db, 'reviews'), { productId: pid, name, rating, comment: (f.get('comment') || '').trim(), photos, verified, orderCode: verified ? orderCode : '', createdAt: Date.now() });
     try { await updateDoc(doc(db, 'products', pid), { ratingSum: increment(rating), ratingCount: increment(1) }); } catch (e) {}
     form.reset(); $$('#rIn .star').forEach(s => s.classList.remove('on'));
     $('.ip-rows', ip).innerHTML = ipRow(''); updateIp(ip);
@@ -646,32 +693,43 @@ function viewCheckout(id) {
         <div class="field"><label class="req">Nomor rumah</label><input name="noRumah" required></div>
       </div>
       <div class="field"><label>Detail lainnya</label><textarea name="detail" placeholder="Contoh: Blok / unit no., patokan"></textarea></div>
+      ${S.settings.couponCode ? `<div class="field"><label>Kode kupon (opsional)</label><input name="coupon" id="coupon" placeholder="Masukkan ${esc(S.settings.couponCode)}"><p class="muted small">Kupon ${esc(S.settings.couponCode)} memberi diskon ${Number(S.settings.couponPercent)||10}% pada subtotal produk.</p></div>` : ''}
+      <div class="field"><label class="check"><input type="checkbox" name="saveAddress" id="saveAddress" checked> Simpan alamat di perangkat ini untuk pembelian berikutnya</label></div>
+      ${S.settings.paymentInfo ? `<div class="note"><strong>Informasi pembayaran</strong><div class="pre">${esc(S.settings.paymentInfo)}</div></div><div class="field"><label>Tautan bukti pembayaran (opsional, imgbb)</label><input name="paymentProof" placeholder="https://i.ibb.co/..." inputmode="url"></div>` : ''}
       ${waField}
       <button class="btn" type="submit">Konfirmasi pesanan</button>
       <p class="muted small" style="margin-top:10px">Setelah dikonfirmasi, rincian pesanan akan dikirim lewat WhatsApp.</p>
     </form>
     <aside class="panel">
       <h2>Ringkasan</h2>
-      <div class="sum-item">${imgTag((p.images || [])[0], p.name)}<div><div>${esc(p.name)}</div><div class="muted small">${rupiah(p.price)} per item</div></div></div>
+      <div class="sum-item">${imgTag((p.images || [])[0], p.name)}<div><div>${esc(p.name)}</div><div class="muted small">${rupiah(p.discountPrice && p.discountPrice < p.price ? p.discountPrice : p.price)} per item</div></div></div>
       <div class="field" style="margin-bottom:8px"><label>Jumlah</label>
         <div class="qty"><button type="button" data-act="qty" data-d="-1" aria-label="Kurangi">-</button><input id="qty" type="number" min="1" ${typeof p.stock === 'number' ? `max="${p.stock}"` : ''} value="1" aria-label="Jumlah"><button type="button" data-act="qty" data-d="1" aria-label="Tambah">+</button></div></div>
-      <div class="sum-line"><span>Subtotal</span><strong id="sumTotal">${rupiah(p.price)}</strong></div>
+      <div class="sum-line"><span>Subtotal</span><strong id="sumTotal">${rupiah(p.discountPrice && p.discountPrice < p.price ? p.discountPrice : p.price)}</strong></div>
       <div class="muted small">(belum termasuk ongkir)</div>
     </aside>
   </div>`;
+  try { const a = JSON.parse(localStorage.getItem('bd_address') || 'null'); if (a) Object.entries(a).forEach(([k,v]) => { const el = $(`[name=\"${k}\"]`); if (el) el.value = v; }); } catch(e) {}
   if (p.sellerId) getUser(p.sellerId).then(u => {
     S.curSeller = u; const box = $('#waField'); if (!box) return;
     box.innerHTML = u && u.wa ? `Pesanan akan dikirim ke penjual: <strong>${esc(u.storeName || u.name)}</strong>.` : 'Penjual ini belum mengatur nomor WhatsApp, sehingga pesanan belum dapat dikirim.';
   });
 }
 function currentQty() { const p = S.cur; let q = Math.max(1, parseInt($('#qty').value) || 1); if (typeof p.stock === 'number') q = Math.min(q, p.stock); return q; }
-function syncQty() { const q = currentQty(); $('#qty').value = q; $('#sumTotal').textContent = rupiah(S.cur.price * q); }
+function effectivePrice(p) { return p?.discountPrice && p.discountPrice < p.price ? p.discountPrice : (p?.price || 0); }
+function couponFor(code, subtotal) { const wanted=(S.settings.couponCode||'').trim().toUpperCase(); return wanted && String(code||'').trim().toUpperCase()===wanted ? Math.round(subtotal*(Number(S.settings.couponPercent)||10)/100) : 0; }
+function syncQty() { const q = currentQty(); $('#qty').value = q; const base=effectivePrice(S.cur)*q; const ci=$('#coupon'); const off=ci ? couponFor(ci.value,base) : 0; $('#sumTotal').textContent = rupiah(Math.max(0,base-off)); }
 const makeCode = () => { const d = new Date(); const pad = n => String(n).padStart(2, '0'); const r = Math.random().toString(36).slice(2, 6).toUpperCase(); return `BD-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${r}`; };
 
 async function submitCheckout(form) {
   const p = S.cur; const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim();
   const qty = currentQty();
   const phone = normPhone(v('phone'));
+  const baseSubtotal = effectivePrice(p) * qty;
+  const couponCode = v('coupon').toUpperCase();
+  if (couponCode && couponCode !== String(S.settings.couponCode||'').toUpperCase()) return toast('Kode kupon tidak valid.');
+  const discountAmount = couponFor(couponCode, baseSubtotal);
+  const finalSubtotal = Math.max(0, baseSubtotal - discountAmount);
   if (phone.length < 10 || phone.length > 15) return toast('Nomor telepon tidak valid.');
   if (!/^\d{5}$/.test(v('kodepos'))) return toast('Kode pos harus 5 angka.');
   let wa;
@@ -685,19 +743,21 @@ async function submitCheckout(form) {
     wa = was[parseInt(v('wa')) || 0] || was[0];
   }
   const customer = { name: v('name'), phone, provinsi: v('provinsi'), kota: v('kota'), kecamatan: v('kecamatan'), kodepos: v('kodepos'), jalan: v('jalan'), rumah: v('rumah'), noRumah: v('noRumah'), detail: v('detail') };
+  if (f.get('saveAddress') === 'on') { const {name, phone, provinsi, kota, kecamatan, kodepos, jalan, rumah, noRumah, detail} = customer; localStorage.setItem('bd_address', JSON.stringify({name, phone, provinsi, kota, kecamatan, kodepos, jalan, rumah, noRumah, detail})); }
   const code = makeCode(); const now = Date.now();
   const order = { createdAt: now, updatedAt: now, status: 'Menunggu konfirmasi', productId: p.id, sellerId: p.sellerId || null, sellerName: p.sellerName || '',
-    items: [{ productId: p.id, name: p.name, price: p.price, qty, image: (p.images || [])[0] || '' }],
-    subtotal: p.price * qty, customer, waNumber: wa.number, waLabel: wa.label || '', resi: '', note: '',
+    items: [{ productId: p.id, name: p.name, price: effectivePrice(p), qty, image: (p.images || [])[0] || '' }],
+    subtotal: finalSubtotal, couponCode: discountAmount ? couponCode : '', discountAmount, paymentProof: v('paymentProof'), customer, waNumber: wa.number, waLabel: wa.label || '', resi: '', note: '',
     history: [{ status: 'Menunggu konfirmasi', note: 'Pesanan dibuat', at: now, by: 'pembeli' }] };
   const btn = $('button[type=submit]', form); btn.disabled = true; btn.textContent = 'Menyimpan...';
   try {
     await setDoc(doc(db, 'orders', code), order);
+    try { await updateDoc(doc(db, 'products', p.id), { soldCount: increment(qty) }); } catch (e) {}
     if (typeof p.stock === 'number') { try { await updateDoc(doc(db, 'products', p.id), { stock: increment(-qty) }); } catch (e) {} }
     addMyCode(code);
   } catch (e) { console.error(e); btn.disabled = false; btn.textContent = 'Konfirmasi pesanan'; return toast('Pesanan gagal disimpan. Coba lagi.'); }
   const msg = [`*Pesanan baru - ${S.settings.storeName}*`, `Kode pesanan: ${code}`, '',
-    `Produk: ${p.name}`, `Jumlah: ${qty}`, `Harga satuan: ${rupiah(p.price)}`, `Subtotal: ${rupiah(order.subtotal)} (belum termasuk ongkir)`, '',
+    `Produk: ${p.name}`, `Jumlah: ${qty}`, `Harga satuan: ${rupiah(effectivePrice(p))}`, `Subtotal: ${rupiah(baseSubtotal)}`, discountAmount ? `Diskon kupon ${couponCode}: -${rupiah(discountAmount)}` : '', `Total produk: ${rupiah(order.subtotal)} (belum termasuk ongkir)`, order.paymentProof ? `Bukti pembayaran: ${order.paymentProof}` : '', '',
     '*Data pembeli*', `Nama: ${customer.name}`, `No. telepon: ${customer.phone}`, '',
     '*Alamat pengiriman*', fmtAddress(customer), '', 'Mohon konfirmasi pesanan dan total ongkir. Terima kasih.'].join('\n');
   const url = waLink(wa.number, msg);
@@ -790,6 +850,7 @@ function productForm(p, ctx) {
       <div class="field"><label>Kategori</label><input name="category" value="${esc(p.category || '')}"></div>
       <div class="field"><label>Stok (kosong = tidak dibatasi)</label><input name="stock" type="number" min="0" value="${typeof p.stock === 'number' ? p.stock : ''}"></div>
     </div>
+    <div class="row2"><div class="field"><label>Harga diskon (opsional, Rp)</label><input name="discountPrice" type="number" min="0" value="${p.discountPrice ?? ''}" placeholder="Kosongkan jika tidak diskon"></div><div class="field"><label class="check"><input type="checkbox" name="preorder" ${p.preorder ? 'checked' : ''}> Produk pre-order</label></div></div>
     <div class="field"><label>Foto produk: tempel link imgbb atau kode HTML, tambah foto lain bila perlu</label>${imgPicker('images', p.images || [], { max: 8 })}${IMG_STEPS}</div>
     <div class="field"><label>Deskripsi</label><textarea name="description" style="min-height:130px">${esc(p.description || '')}</textarea></div>
     <div class="field"><label class="check"><input type="checkbox" name="active" ${p.active === false ? '' : 'checked'}> Tampilkan di toko</label></div>
@@ -802,7 +863,9 @@ async function saveProduct(form) {
   const price = parseInt(v('price')); if (!v('name') || isNaN(price) || price < 0) return toast('Nama dan harga wajib diisi.');
   const ip = $('.ip', form); if (ipInvalid(ip)) return toast('Ada link foto yang tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
   const stockRaw = v('stock');
-  const data = { name: v('name'), price, category: v('category'), description: (f.get('description') || '').toString().trim(), images: ipValues(ip),
+  const discountRaw = v('discountPrice'); const discountPrice = discountRaw === '' ? null : Math.max(0, parseInt(discountRaw)||0);
+  if (discountPrice !== null && discountPrice >= price) return toast('Harga diskon harus lebih rendah dari harga normal.');
+  const data = { name: v('name'), price, discountPrice, preorder: f.get('preorder') === 'on', category: v('category'), description: (f.get('description') || '').toString().trim(), images: ipValues(ip),
     stock: stockRaw === '' ? null : Math.max(0, parseInt(stockRaw) || 0), active: f.get('active') === 'on', updatedAt: Date.now() };
   try {
     if (v('id')) {
@@ -811,7 +874,10 @@ async function saveProduct(form) {
     } else {
       const extra = { createdAt: Date.now(), ratingSum: 0, ratingCount: 0 };
       if (ctx === 'seller') {
-        if (!S.user || !S.profile?.isSeller) return toast('Aktifkan akun penjual terlebih dahulu.');
+        if (!S.user || !S.profile?.isSeller) return toast('Aktifkan paket penjual terlebih dahulu.');
+        if (S.profile.subscriptionExpiresAt && S.profile.subscriptionExpiresAt < Date.now()) return toast('Masa paket penjual sudah berakhir. Perpanjang melalui Profil.');
+        if (S.profile.planStatus === 'pending') return toast('Paket penjual menunggu verifikasi pembayaran melalui WhatsApp developer.');
+        if (S.profile.planStatus === 'expired' || (S.profile.sellerPlan === 'trial' && S.profile.trialStartedAt && Date.now()-S.profile.trialStartedAt >= 7*86400000)) return toast('Masa Free Trial berakhir. Pilih paket berbayar melalui Profil.');
         Object.assign(extra, { sellerId: S.user.uid, sellerName: S.profile.storeName || S.profile.name || 'Penjual', approved: !S.settings.sellerApproval });
       }
       await addDoc(collection(db, 'products'), { ...data, ...extra });
@@ -842,12 +908,14 @@ function viewSeller() {
       <div class="actions"><button class="btn" data-act="gl-login">Masuk dengan Google</button><a class="btn ghost" href="#/">Kembali ke beranda</a></div></div>`;
     return;
   }
-  const isSeller = !!S.profile?.isSeller;
+  const planExpired = S.profile?.subscriptionExpiresAt && S.profile.subscriptionExpiresAt < Date.now();
+  const isSeller = !!S.profile?.isSeller && !planExpired;
+  if (planExpired) { S.profile.isSeller = false; S.profile.planStatus = 'expired'; }
   if (!isSeller) S.stab = 'profile'; else startSellerOrders();
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
   <div class="actions" style="justify-content:space-between;margin:0 0 6px"><h1 style="margin:0">${isSeller ? 'Toko saya' : 'Akun saya'}</h1><button class="linkbtn" data-act="gl-logout">Keluar</button></div>
   <p class="muted small" style="margin-bottom:16px">Masuk sebagai ${esc(S.user.email || S.user.displayName || '')}</p>
-  ${isSeller ? `<div class="tabs">
+  ${isSeller ? `<div class="note">Paket: <strong>${esc(S.profile?.sellerPlanLabel || 'Free Trial 7 hari')}</strong> · Status: <strong>${esc(S.profile?.planStatus || 'trial')}</strong>${S.profile?.planStatus==='pending' ? ' · Menunggu verifikasi pembayaran.' : ''}${S.profile?.planStatus==='expired' ? ' · Masa trial berakhir, pilih paket berbayar di Profil.' : ''}</div><div class="tabs">
     <button data-act="stab" data-stab="products" class="${S.stab === 'products' ? 'on' : ''}">Produk saya</button>
     <button data-act="stab" data-stab="orders" data-stab-label class="${S.stab === 'orders' ? 'on' : ''}">${tabLabel(S.sellerOrders)}</button>
     <button data-act="stab" data-stab="profile" class="${S.stab === 'profile' ? 'on' : ''}">Profil</button></div>` : ''}
@@ -865,13 +933,19 @@ function renderSellerTab() {
   } else if (S.stab === 'orders') {
     b.innerHTML = '<h2>Pesanan masuk</h2><div id="oList"></div>'; renderSellerOrders();
   } else {
-    const pr = S.profile || {}; const isSeller = !!pr.isSeller;
+    const pr = S.profile || {}; const isSeller = !!pr.isSeller || ['pending','expired','trial'].includes(pr.planStatus);
     b.innerHTML = `<form class="panel" data-form="profile" style="max-width:640px"><h2>Profil</h2>
       <div style="margin-bottom:14px">${avatarHTML(pr.photo || S.user.photoURL, pr.name || S.user.displayName, 'lg')}</div>
       <div class="field"><label>Nama tampilan</label><input name="name" value="${esc(pr.name || S.user.displayName || '')}" required></div>
       <div class="field"><label>Foto profil: tempel link imgbb atau kode HTML</label>${imgPicker('photo', pr.photo ? [pr.photo] : [], { single: true })}${IMG_STEPS}</div>
       <div class="field"><label class="check"><input type="checkbox" name="isSeller" ${isSeller ? 'checked' : ''}> Saya ingin berjualan di ${esc(S.settings.storeName)}</label></div>
       <div id="sellerFields" class="${isSeller ? '' : 'hide'}">
+        <h3>Pilih paket penjual</h3><div class="plan-grid">
+          <label class="plan-card"><input type="radio" name="sellerPlan" value="trial" ${(!pr.sellerPlan || pr.sellerPlan==='trial') ? 'checked' : ''}><strong>Free Trial</strong><div class="plan-price">Gratis</div><span class="seller-plan-note">7 hari</span></label>
+          <label class="plan-card"><input type="radio" name="sellerPlan" value="weekly" ${pr.sellerPlan==='weekly' ? 'checked' : ''}><strong>Mingguan</strong><div class="plan-price">Rp10.000</div><span class="seller-plan-note">7 hari</span></label>
+          <label class="plan-card"><input type="radio" name="sellerPlan" value="monthly" ${pr.sellerPlan==='monthly' ? 'checked' : ''}><strong>Bulanan</strong><div class="plan-price">Rp50.000</div><span class="seller-plan-note">30 hari</span></label>
+          <label class="plan-card"><input type="radio" name="sellerPlan" value="yearly" ${pr.sellerPlan==='yearly' ? 'checked' : ''}><strong>Tahunan</strong><div class="plan-price">Rp400.000</div><span class="seller-plan-note">365 hari</span></label>
+        </div><p class="seller-plan-note">Paket berbayar diproses melalui WhatsApp developer. Status paket tidak aktif otomatis sebelum pembayaran diverifikasi.</p>
         <div class="field"><label class="req">Nama toko</label><input name="storeName" value="${esc(pr.storeName || '')}"></div>
         <div class="field"><label class="req">Nomor WhatsApp penjual (pesanan dikirim ke sini)</label><input name="wa" type="tel" placeholder="08xxxxxxxxxx" value="${esc(pr.wa || '')}"></div>
         <div class="field"><label>Tentang toko</label><textarea name="bio" maxlength="300">${esc(pr.bio || '')}</textarea></div>
@@ -893,15 +967,30 @@ async function saveProfile(form) {
     if (!v('storeName')) return toast('Nama toko wajib diisi.');
     if (wa.length < 10 || wa.length > 15) return toast('Nomor WhatsApp penjual tidak valid.');
   }
-  const data = { name: v('name'), photo: ipValues(ip)[0] || '', isSeller, storeName: v('storeName'), wa: isSeller ? wa : (S.profile?.wa || ''), bio: v('bio'), updatedAt: Date.now() };
+  const plan = (f.get('sellerPlan') || S.profile?.sellerPlan || 'trial').toString();
+  const planMeta = {trial:{label:'Free Trial 7 hari',price:0,days:7},weekly:{label:'Mingguan',price:10000,days:7},monthly:{label:'Bulanan',price:50000,days:30},yearly:{label:'Tahunan',price:400000,days:365}}[plan] || {label:'Free Trial 7 hari',price:0,days:7};
+  const was = !!S.profile?.isSeller;
+  const trialStartedAt = plan === 'trial' ? (S.profile?.trialStartedAt || Date.now()) : (S.profile?.trialStartedAt || null);
+  const trialActive = plan === 'trial' && Date.now() - trialStartedAt < 7 * 86400000;
+  const paidAlreadyActive = S.profile?.sellerPlan === plan && S.profile?.planStatus === 'active' && (!S.profile?.subscriptionExpiresAt || S.profile.subscriptionExpiresAt > Date.now());
+  const planStatus = plan === 'trial' ? (trialActive ? 'trial' : 'expired') : (paidAlreadyActive ? 'active' : 'pending');
+  const sellerActive = isSeller && (trialActive || paidAlreadyActive || (was && !S.profile?.sellerPlan));
+  const data = { name: v('name'), photo: ipValues(ip)[0] || '', isSeller: sellerActive, storeName: v('storeName'), wa: isSeller ? wa : (S.profile?.wa || ''), bio: v('bio'), sellerPlan: plan, sellerPlanLabel: planMeta.label, sellerPlanPrice: planMeta.price, sellerPlanDays: planMeta.days, trialStartedAt, subscriptionExpiresAt: plan === 'trial' ? trialStartedAt + 7*86400000 : (paidAlreadyActive ? (S.profile?.subscriptionExpiresAt || null) : null), planStatus, updatedAt: Date.now() };
   try {
     await setDoc(doc(db, 'users', S.user.uid), data, { merge: true });
-    const was = !!S.profile?.isSeller;
     S.profile = { ...(S.profile || {}), ...data }; delete S.users[S.user.uid];
-    if (isSeller && !was) S.stab = 'products';
-    renderAccount(); toast('Profil disimpan.'); viewSeller();
-    // nama toko pada produk lama ikut diperbarui
-    if (isSeller) S.products.filter(p => p.sellerId === S.user.uid && p.sellerName !== data.storeName).forEach(p => updateDoc(doc(db, 'products', p.id), { sellerName: data.storeName }).catch(() => {}));
+    if (sellerActive && !was) S.stab = 'products';
+    renderAccount();
+    if (isSeller && plan !== 'trial' && !paidAlreadyActive) {
+      toast('Profil disimpan. Lanjutkan permintaan paket melalui WhatsApp.');
+      viewSeller();
+      const message = `Halo developer BeliDulu, saya ingin mengaktifkan paket penjual ${planMeta.label} seharga ${rupiah(planMeta.price)}.\nNama toko: ${data.storeName}\nEmail akun: ${S.user.email || '-'}\nUID: ${S.user.uid}`;
+      window.open(waLink(S.settings.developerWhatsApp || '082254388144', message), '_blank', 'noopener');
+    } else {
+      toast(isSeller && plan === 'trial' && !trialActive ? 'Free Trial sudah berakhir. Pilih paket berbayar.' : (plan === 'trial' && !was ? 'Free Trial aktif selama 7 hari.' : 'Profil disimpan.'));
+      viewSeller();
+    }
+    if (sellerActive) S.products.filter(p => p.sellerId === S.user.uid && p.sellerName !== data.storeName).forEach(p => updateDoc(doc(db, 'products', p.id), { sellerName: data.storeName }).catch(() => {}));
   } catch (e) { console.error(e); toast('Gagal menyimpan profil.'); }
 }
 
@@ -919,6 +1008,7 @@ function viewAdmin() {
     <button data-act="tab" data-tab="orders" class="${S.tab === 'orders' ? 'on' : ''}">${tabLabel(S.orders)}</button>
     <button data-act="tab" data-tab="products" class="${S.tab === 'products' ? 'on' : ''}">Produk</button>
     <button data-act="tab" data-tab="reviews" class="${S.tab === 'reviews' ? 'on' : ''}">Ulasan</button>
+    <button data-act="tab" data-tab="sellers" class="${S.tab === 'sellers' ? 'on' : ''}">Paket penjual</button>
     <button data-act="tab" data-tab="settings" class="${S.tab === 'settings' ? 'on' : ''}">Pengaturan</button>
     <span class="sp"></span><button data-act="logout">Keluar</button></div>
   <div id="adminBody"></div>`;
@@ -929,10 +1019,11 @@ function renderAdminTab() {
     $('#adminBody').innerHTML = `<div class="actions" style="margin:0 0 14px;justify-content:space-between"><h2 style="margin:0">Produk</h2><button class="btn" data-act="p-new">Tambah produk</button></div><div class="panel" id="pList"></div>`;
     renderAdminProducts();
   } else if (S.tab === 'reviews') { renderAdminReviews(); }
+  else if (S.tab === 'sellers') { renderAdminSellers(); }
   else if (S.tab === 'settings') { renderAdminSettings(); }
   else {
-    $('#adminBody').innerHTML = `<div class="toolbar"><input id="oq" type="search" placeholder="Cari kode atau nama pembeli" value="${esc(S.ordQ)}" style="max-width:280px">
-      <select id="of" style="max-width:220px">${['Semua', ...STATUSES].map(s => `<option${s === S.ordFilter ? ' selected' : ''}>${s}</option>`).join('')}</select></div><div id="oList"></div>`;
+    $('#adminBody').innerHTML = `<div class="actions" style="justify-content:space-between"><h2>Pesanan</h2><button class="btn ghost sm" data-act="export-orders">Ekspor CSV</button></div><div class="toolbar"><input id="oq" type="search" placeholder="Cari kode atau nama pembeli" value="${esc(S.ordQ)}" style="max-width:280px">
+      <select id="of" style="max-width:220px">${['Semua', ...STATUSES].map(s => `<option${s === S.ordFilter ? ' selected' : ''}>${s}</option>`).join('')}</select><button class="btn ghost sm" data-act="export-orders">Ekspor CSV</button><button class="btn ghost sm" data-act="print-orders">Cetak</button></div><div class="panel small">Total pesanan: <strong>${S.orders.length}</strong> · Total nilai pesanan: <strong>${rupiah(S.orders.reduce((n,o)=>n+(o.subtotal||0),0))}</strong> · Produk terjual: <strong>${S.products.reduce((n,p)=>n+(p.soldCount||0),0)}</strong></div><div id="oList"></div>`;
     renderAdminOrders();
   }
 }
@@ -940,7 +1031,7 @@ function renderAdminProducts() {
   const box = $('#pList'); if (!box) return;
   box.innerHTML = S.products.length ? S.products.map(p => `<div class="list-row">
     ${imgTag((p.images || [])[0], p.name, 'thumb')}
-    <div class="grow"><div class="t">${esc(p.name)}</div><div class="muted small">${rupiah(p.price)}${p.category ? ' | ' + esc(p.category) : ''} | Stok: ${typeof p.stock === 'number' ? p.stock : 'tidak dibatasi'} | ${p.active === false ? 'Disembunyikan' : 'Tampil'}${p.sellerName ? ' | Penjual: ' + esc(p.sellerName) : ''}${p.approved === false ? ' | Menunggu persetujuan' : ''}</div></div>
+    <div class="grow"><div class="t">${esc(p.name)}</div><div class="muted small">${rupiah(p.price)}${p.category ? ' | ' + esc(p.category) : ''} | Stok: ${typeof p.stock === 'number' ? p.stock : 'tidak dibatasi'}${typeof p.stock === 'number' && p.stock <= Number(S.settings.lowStockThreshold ?? 5) ? ' ⚠ STOK MENIPIS' : ''} | ${p.active === false ? 'Disembunyikan' : 'Tampil'}${p.sellerName ? ' | Penjual: ' + esc(p.sellerName) : ''}${p.approved === false ? ' | Menunggu persetujuan' : ''}</div></div>
     ${p.approved === false ? `<button class="btn sm" data-act="p-approve" data-id="${esc(p.id)}">Setujui</button>` : ''}
     <button class="btn ghost sm" data-act="p-edit" data-id="${esc(p.id)}">Ubah</button>
     <button class="linkbtn danger" data-act="p-del" data-id="${esc(p.id)}">Hapus</button></div>`).join('') : '<div class="empty">Belum ada produk. Klik "Tambah produk".</div>';
@@ -970,9 +1061,22 @@ function adminOrderHTML(o, canDelete) {
       <ul class="tl">${(o.history || []).map(h => `<li><strong>${esc(h.status)}</strong>${h.note ? ' - ' + esc(h.note) : ''} <span class="muted">(${esc(h.by || '')}, ${fmtDate(h.at)})</span></li>`).join('')}</ul>
       <div class="actions"><button class="btn sm" data-act="o-save" data-code="${esc(o.code)}">Simpan perubahan</button>
         <a class="btn ghost sm" href="${esc(chat)}" target="_blank" rel="noopener">Chat pembeli</a>
+        <button class="btn ghost sm" data-act="print-invoice" data-code="${esc(o.code)}">Cetak invoice</button>
+        <button class="btn ghost sm" data-act="notify-status" data-code="${esc(o.code)}">Kabari status via WhatsApp</button>
         ${canDelete ? `<button class="linkbtn danger" data-act="o-del" data-code="${esc(o.code)}">Hapus pesanan</button>` : ''}</div>
     </div></details>`;
 }
+async function renderAdminSellers() {
+  const box = $('#adminBody');
+  box.innerHTML = '<div class="panel"><h2>Paket penjual</h2><p class="muted">Aktifkan paket setelah pembayaran diverifikasi. Ini tidak memakai Firebase Authentication admin.</p><div id="sellerPlanRows">Memuat data penjual...</div></div>';
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    const users = snap.docs.map(d => ({uid:d.id, ...d.data()})).filter(u => u.sellerPlan || u.isSeller).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const rows = $('#sellerPlanRows'); if (!rows) return;
+    rows.innerHTML = users.length ? users.map(u => `<div class="list-row"><div class="grow"><strong>${esc(u.storeName || u.name || 'Toko tanpa nama')}</strong><div class="muted small">UID: ${esc(u.uid)} · Paket: ${esc(u.sellerPlanLabel || u.sellerPlan || 'Lama')} · ${esc(u.planStatus || 'aktif lama')} · ${u.subscriptionExpiresAt ? 'Berakhir '+fmtDate(u.subscriptionExpiresAt) : 'Belum ada tanggal berakhir'}</div></div>${u.planStatus==='pending' || u.planStatus==='expired' || !u.isSeller || (u.subscriptionExpiresAt && u.subscriptionExpiresAt < Date.now()) ? `<button class="btn sm" data-act="seller-activate" data-id="${esc(u.uid)}" data-days="${Number(u.sellerPlanDays)||7}">Aktifkan / Perpanjang</button>` : '<span class="badge done">Aktif</span>'}</div>`).join('') : '<p class="empty">Belum ada akun penjual.</p>';
+  } catch (e) { const rows=$('#sellerPlanRows'); if(rows) rows.innerHTML='<p class="muted">Data penjual tidak dapat dimuat. Periksa aturan Firestore.</p>'; }
+}
+
 async function renderAdminReviews() {
   $('#adminBody').innerHTML = '<div class="panel" id="rvAdmin"><p class="muted">Memuat...</p></div>';
   try {
@@ -980,7 +1084,7 @@ async function renderAdminReviews() {
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     const pn = id => (S.products.find(p => p.id === id) || {}).name || '(produk dihapus)';
     $('#rvAdmin').innerHTML = `<h2>Ulasan</h2>` + (list.length ? list.map(r => `<div class="list-row" style="align-items:flex-start"><div class="grow">
-      <div><strong>${esc(r.name)}</strong> <span class="stars">${stars(r.rating)}</span> <span class="muted small">${fmtDate(r.createdAt)}</span></div>
+      <div><strong>${esc(r.name)}</strong> ${r.verified ? '<span class="badge done">Pembeli terverifikasi</span>' : ''} <span class="stars">${stars(r.rating)}</span> <span class="muted small">${fmtDate(r.createdAt)}</span></div>
       <div class="muted small">${esc(pn(r.productId))}</div>${r.comment ? `<div class="pre">${esc(r.comment)}</div>` : ''}
       ${(r.photos || []).length ? `<div class="rev-photos">${r.photos.map(u => imgTag(u, 'Foto')).join('')}</div>` : ''}</div>
       <button class="linkbtn danger" data-act="r-del" data-id="${esc(r.id)}" data-pid="${esc(r.productId)}" data-rating="${r.rating}">Hapus</button></div>`).join('') : '<div class="empty">Belum ada ulasan.</div>');
@@ -995,6 +1099,11 @@ function renderAdminSettings() {
     <div class="field"><label>Nama toko</label><input name="storeName" value="${esc(s.storeName)}" required></div>
     <div class="field"><label>Kalimat pembuka di beranda</label><input name="tagline" value="${esc(cleanTagline(s.tagline))}"></div>
     <div class="field"><label>Catatan di bagian bawah halaman</label><input name="footerNote" value="${esc(s.footerNote || '')}"></div>
+    <div class="field"><label>Banner promo beranda</label><input name="promoBanner" maxlength="180" value="${esc(s.promoBanner || '')}" placeholder="Kosongkan jika tidak ada promo"></div>
+    <div class="field"><label>WhatsApp developer untuk paket penjual</label><input name="developerWhatsApp" value="${esc(s.developerWhatsApp || '082254388144')}" placeholder="08xxxxxxxxxx"></div>
+    <div class="field"><label>Informasi pembayaran (bank / QRIS)</label><textarea name="paymentInfo" placeholder="Nama bank, nomor rekening, atau tautan QRIS">${esc(s.paymentInfo || '')}</textarea></div>
+    <h3 style="margin-top:20px">Kupon diskon aktif</h3><div class="row2"><div class="field"><label>Kode kupon</label><input name="couponCode" value="${esc(s.couponCode || '')}" placeholder="Contoh: HEMAT10"></div><div class="field"><label>Diskon kupon (%)</label><input name="couponPercent" type="number" min="1" max="90" value="${Number(s.couponPercent || 10)}"></div></div>
+    <div class="field"><label>Batas peringatan stok menipis</label><input name="lowStockThreshold" type="number" min="0" max="100" value="${Number(s.lowStockThreshold ?? 5)}"></div>
     <div class="field"><label class="check"><input type="checkbox" name="sellerApproval" ${s.sellerApproval ? 'checked' : ''}> Produk dari penjual harus disetujui dulu sebelum tampil</label></div>
     <h3 style="margin-top:20px">Pencarian Google (SEO)</h3>
     <div class="field"><label>Deskripsi singkat toko (sekitar 150 karakter)</label><textarea name="seoDescription" style="min-height:70px">${esc(s.seoDescription || '')}</textarea></div>
@@ -1003,16 +1112,61 @@ function renderAdminSettings() {
     <p class="muted small">Boleh lebih dari satu. Jika ada lebih dari satu nomor, pembeli memilih tujuan saat memesan. Gunakan format 08xxxx atau 628xxxx. Produk milik penjual lain dikirim ke nomor penjualnya.</p>
     <div id="waRows">${was.map(waRow).join('')}</div>
     <button type="button" class="btn ghost sm" data-act="wa-add">Tambah nomor</button>
-    <div style="margin-top:20px"><button class="btn" type="submit">Simpan pengaturan</button></div></form>`;
+    <div style="margin-top:20px"><button class="btn" type="submit">Simpan pengaturan</button> <button class="btn ghost" type="button" data-act="backup-data">Ekspor cadangan produk & pesanan</button></div></form>`;
 }
 async function saveSettings(form) {
   const f = new FormData(form);
   const waNumbers = $$('.wa-row', form).map(r => ({ label: $('[name=waLabel]', r).value.trim(), number: normPhone($('[name=waNumber]', r).value) })).filter(w => w.number);
   if (waNumbers.some(w => w.number.length < 10 || w.number.length > 15)) return toast('Ada nomor WhatsApp yang tidak valid.');
   try {
-    await setDoc(doc(db, 'settings', 'store'), { storeName: f.get('storeName').toString().trim() || 'BeliDulu', tagline: cleanTagline(f.get('tagline').toString()), footerNote: f.get('footerNote').toString().trim(), seoDescription: f.get('seoDescription').toString().trim(), seoKeywords: f.get('seoKeywords').toString().trim(), sellerApproval: f.get('sellerApproval') === 'on', waNumbers }, { merge: true });
+    await setDoc(doc(db, 'settings', 'store'), { storeName: f.get('storeName').toString().trim() || 'BeliDulu', tagline: cleanTagline(f.get('tagline').toString()), footerNote: f.get('footerNote').toString().trim(), promoBanner: (f.get('promoBanner')||'').toString().trim(), developerWhatsApp: (f.get('developerWhatsApp')||'082254388144').toString().trim(), paymentInfo: (f.get('paymentInfo')||'').toString().trim(), couponCode: (f.get('couponCode')||'').toString().trim().toUpperCase(), couponPercent: Math.max(1, Math.min(90, parseInt(f.get('couponPercent'))||10)), lowStockThreshold: Math.max(0, parseInt(f.get('lowStockThreshold'))||0), seoDescription: f.get('seoDescription').toString().trim(), seoKeywords: f.get('seoKeywords').toString().trim(), sellerApproval: f.get('sellerApproval') === 'on', waNumbers }, { merge: true });
     toast('Pengaturan disimpan.');
   } catch (e) { toast('Gagal menyimpan pengaturan.'); }
+}
+
+/* ====== Utilitas tambahan ====== */
+function printInvoice(code) {
+  const o = S.orders.find(x=>x.code===code) || S.sellerOrders.find(x=>x.code===code) || S.my[code];
+  if (!o) return toast('Data pesanan tidak ditemukan.');
+  const rows=(o.items||[]).map(i=>`<tr><td>${esc(i.name)}</td><td>${i.qty}</td><td>${rupiah(i.price)}</td><td>${rupiah(i.price*i.qty)}</td></tr>`).join('');
+  const w=window.open('', '_blank', 'width=760,height=760'); if(!w) return toast('Izinkan pop-up untuk mencetak invoice.');
+  w.document.write(`<!doctype html><html lang="id"><meta charset="utf-8"><title>Invoice ${esc(o.code)}</title><style>body{font:14px Arial,sans-serif;padding:28px;color:#222}h1{font-size:22px}table{border-collapse:collapse;width:100%;margin-top:20px}th,td{border:1px solid #ccc;padding:9px;text-align:left} .right{text-align:right}</style><h1>Invoice ${esc(o.code)}</h1><p>Tanggal: ${fmtDate(o.createdAt)}<br>Status: ${esc(o.status)}</p><h3>Pembeli</h3><p>${esc(o.customer?.name||'')} · ${esc(o.customer?.phone||'')}<br>${esc(fmtAddress(o.customer||{})).replace(/\n/g,'<br>')}</p><table><thead><tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table><h3 class="right">Total produk: ${rupiah(o.subtotal)}</h3><p>Ongkir dikonfirmasi terpisah dengan penjual.</p><script>window.onload=()=>window.print()<\/script></html>`);
+  w.document.close();
+}
+function notifyOrderStatus(code) {
+  const o=S.orders.find(x=>x.code===code)||S.sellerOrders.find(x=>x.code===code);
+  if(!o) return toast('Pesanan tidak ditemukan.');
+  const msg=`Halo ${o.customer?.name||'Kak'}, pembaruan pesanan ${o.code}: status sekarang ${o.status}.${o.resi?' Info pengiriman/resi: '+o.resi+'.':''}${o.note?' Catatan: '+o.note+'.':''}`;
+  window.open(waLink(o.customer?.phone,msg),'_blank','noopener');
+}
+
+function exportCSV(rows, filename) {
+  const quote = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = rows.map(r => r.map(quote).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+}
+function reportProduct(id) {
+  const p = S.products.find(x => x.id === id); if (!p) return;
+  const reason = prompt('Alasan laporan produk ini:'); if (!reason || !reason.trim()) return;
+  addDoc(collection(db, 'reports'), {type:'product', productId:id, productName:p.name, reason:reason.trim(), reporterUid:S.user?.uid || null, createdAt:Date.now(), status:'baru'}).then(()=>toast('Laporan terkirim.')).catch(()=>toast('Laporan gagal dikirim.'));
+}
+function askSeller(id) {
+  const p = S.products.find(x => x.id === id); if (!p) return;
+  const go = u => { const number = p.sellerId ? u?.wa : (S.settings.waNumbers || [])[0]?.number; if (!number) return toast('Nomor WhatsApp penjual belum tersedia.'); window.open(waLink(number, `Halo, saya ingin bertanya tentang produk ${p.name}. Link: ${location.href}`), '_blank'); };
+  if (p.sellerId) getUser(p.sellerId).then(go); else go(null);
+}
+function subscribeStock(id) {
+  const p = S.products.find(x => x.id === id); if (!p) return;
+  const contact = prompt('Masukkan nomor WhatsApp untuk pengingat stok (contoh 08xxxxxxxxxx):'); if (!contact) return;
+  const phone = normPhone(contact); if (phone.length < 10 || phone.length > 15) return toast('Nomor WhatsApp tidak valid.');
+  addDoc(collection(db, 'stockAlerts'), {productId:id, productName:p.name, phone, createdAt:Date.now(), notified:false}).then(()=>toast('Pengingat stok disimpan.')).catch(()=>toast('Pengingat gagal disimpan.'));
+}
+function shareProduct(id) {
+  const url = location.origin + location.pathname + '#/produk/' + encodeURIComponent(id);
+  if (navigator.share) navigator.share({title:(S.products.find(p=>p.id===id)?.name || 'Produk BeliDulu'), url}).catch(()=>{});
+  else if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(()=>toast('Link produk disalin.')).catch(()=>prompt('Salin link produk:',url));
+  else prompt('Salin link produk:',url);
 }
 
 /* ====== Event delegation ====== */
@@ -1020,11 +1174,12 @@ document.addEventListener('input', e => {
   const t = e.target; const ip = t.closest && t.closest('.ip');
   if (ip) updateIp(ip);
   else if (t.id === 'q') { S.search = t.value; renderGrid(); }
-  else if (t.id === 'qty') syncQty();
+  else if (t.id === 'qty' || t.id === 'coupon') syncQty();
   else if (t.id === 'oq') { S.ordQ = t.value; renderAdminOrders(); }
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'of') { S.ordFilter = e.target.value; renderAdminOrders(); }
+  if (e.target.id === 'sortProducts') renderGrid();
+  else if (e.target.id === 'of') { S.ordFilter = e.target.value; renderAdminOrders(); }
   else if (e.target.name === 'isSeller') $('#sellerFields').classList.toggle('hide', !e.target.checked);
 });
 document.addEventListener('toggle', e => { const d = e.target; if (d.matches && d.matches('details.order')) { d.open ? S.openOrders.add(d.dataset.code) : S.openOrders.delete(d.dataset.code); } }, true);
@@ -1049,6 +1204,20 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act; const code = el.dataset.code;
   if (act === 'reload') location.reload();
+  else if (act === 'theme') { const dark = !document.body.classList.contains('dark-mode'); document.body.classList.toggle('dark-mode', dark); localStorage.setItem('bd_theme', dark ? 'dark' : 'light'); }
+  else if (act === 'share-product') shareProduct(el.dataset.id);
+  else if (act === 'ask-seller') askSeller(el.dataset.id);
+  else if (act === 'report-product') reportProduct(el.dataset.id);
+  else if (act === 'stock-alert') subscribeStock(el.dataset.id);
+  else if (act === 'export-orders') exportCSV([['Kode','Tanggal','Status','Pembeli','Telepon','Produk','Subtotal','Provinsi','Kota','Alamat'], ...S.orders.map(o => [o.code,fmtDate(o.createdAt),o.status,o.customer?.name,o.customer?.phone,(o.items||[]).map(i=>`${i.name} x${i.qty}`).join('; '),o.subtotal,o.customer?.provinsi,o.customer?.kota,fmtAddress(o.customer||{})])], 'belidulu-pesanan.csv');
+  else if (act === 'print-orders') window.print();
+  else if (act === 'print-invoice') printInvoice(code);
+  else if (act === 'notify-status') notifyOrderStatus(code);
+  else if (act === 'backup-data') { const data = {exportedAt:new Date().toISOString(), products:S.products, orders:S.orders, settings:S.settings}; const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='belidulu-backup.json'; a.click(); URL.revokeObjectURL(url); }
+  else if (act === 'add-cart') { addCart(el.dataset.id); renderCartCount(); }
+  else if (act === 'cart-remove') { saveCart(getCart().filter(x=>x.id!==el.dataset.id)); viewCart(); renderCartCount(); }
+  else if (act === 'cart-clear') { saveCart([]); viewCart(); renderCartCount(); }
+  else if (act === 'dark-toggle') { const dark = !document.body.classList.contains('dark-mode'); document.body.classList.toggle('dark-mode', dark); localStorage.setItem('bd_theme', dark ? 'dark' : 'light'); }
   else if (act === 'cat') { S.cat = el.dataset.v; renderGrid(); }
   else if (act === 'wish') { e.preventDefault(); toggleWish(el.dataset.id); }
   else if (act === 'thumb') { const m = $('.gal .main img'); m.src = el.dataset.src; $$('.thumbs button').forEach(b => b.classList.toggle('on', b === el)); }
@@ -1077,6 +1246,7 @@ document.addEventListener('click', async e => {
   }
   else if (act === 'tab') { S.tab = el.dataset.tab; $$('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab)); renderAdminTab(); }
   else if (act === 'logout') { S.admin = false; sessionStorage.removeItem('bd_admin'); if (S.unsubOrders) { S.unsubOrders(); S.unsubOrders = null; } viewAdmin(); }
+  else if (act === 'seller-activate') { const uid=el.dataset.id; const days=Math.max(1,Math.min(366,parseInt(el.dataset.days)||7)); try { const snap=await getDoc(doc(db,'users',uid)); if(!snap.exists()) return toast('Akun penjual tidak ditemukan.'); const u=snap.data(); await updateDoc(doc(db,'users',uid), {isSeller:true, planStatus:'active', subscriptionStartedAt:Date.now(), subscriptionExpiresAt:Date.now()+days*86400000, updatedAt:Date.now()}); if(S.user?.uid===uid){S.profile={...u,isSeller:true,planStatus:'active',subscriptionStartedAt:Date.now(),subscriptionExpiresAt:Date.now()+days*86400000};} toast('Paket penjual berhasil diaktifkan.'); renderAdminSellers(); } catch(e) { console.error(e); toast('Gagal mengaktifkan paket.'); } }
   else if (act === 'p-new') productForm(null, 'admin');
   else if (act === 'p-edit') productForm(S.products.find(p => p.id === el.dataset.id), 'admin');
   else if (act === 'p-del') deleteProduct(el.dataset.id);
@@ -1097,7 +1267,9 @@ document.addEventListener('click', async e => {
 
 applySettings();
 renderAccount();
+renderCartCount();
 route();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});
 </script>
 </body>
 </html>
