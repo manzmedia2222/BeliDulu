@@ -203,6 +203,20 @@ details.order summary::-webkit-details-marker{display:none}
   .card .bd{padding:10px}
 }
 
+
+/* Galeri foto dan variasi di halaman produk */
+.gal .main.main-image-open{width:100%;padding:0;cursor:zoom-in;display:block}
+.product-variants{margin:18px 0 4px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.product-variants h3{margin:0 0 12px;font-size:17px}
+.product-variant-group{margin:12px 0}
+.product-variant-label{font-weight:600;margin-bottom:7px}
+.product-variant-options{display:flex;gap:8px;flex-wrap:wrap}
+.product-variant-option{border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);padding:9px 13px;cursor:pointer;font:inherit;max-width:100%}
+.product-variant-option.selected{border:2px solid var(--primary);background:var(--soft);color:var(--primary-d);padding:8px 12px}
+.image-lightbox{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;padding:56px 16px 24px}
+.image-lightbox img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-out}
+.image-lightbox-close{position:absolute;top:12px;right:14px;border:1px solid rgba(255,255,255,.45);background:rgba(20,20,20,.75);color:#fff;border-radius:50%;width:42px;height:42px;font-size:26px;cursor:pointer}
+.image-lightbox-caption{position:absolute;left:16px;right:16px;bottom:10px;text-align:center;color:#fff;font-size:13px}
 /* Fitur tambahan BeliDulu */
 .toolbar{align-items:center}.sort-select{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface);color:var(--ink);font:inherit;max-width:100%}
 .price-old{font-size:12px;color:var(--muted);text-decoration:line-through;margin-right:6px}.discount-tag{display:inline-block;background:#fff0e6;color:#a94c12;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:5px}
@@ -674,7 +688,7 @@ function viewProduct(id) {
   const sellerProfile = p.sellerId ? (S.users[p.sellerId] || {}) : {};
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a><span class="crumb"><a href="/">Produk</a> / ${esc(p.name)}</span></div>
   <div class="detail">
-    <div class="gal"><div class="main">${imgTag(imgs[0], p.name)}</div>
+    <div class="gal"><button type="button" class="main main-image-open" data-act="image-fullscreen" aria-label="Buka gambar produk layar penuh">${imgTag(imgs[0], p.name)}</button>
       ${imgs.length > 1 ? `<div class="thumbs">${imgs.map((u, i) => `<button class="${i ? '' : 'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Gambar ${i + 1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : ''}
     </div>
     <div class="info">
@@ -692,6 +706,7 @@ function viewProduct(id) {
         <button class="btn ghost" data-act="ask-seller" data-id="${esc(p.id)}">Tanya penjual</button>
         <button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan produk</button>
       </div>
+      ${Object.entries(p.variants||{}).filter(([key,v])=>v && v.enabled && Array.isArray(v.options) && v.options.length).length ? `<section class="product-variants" aria-label="Pilihan variasi produk"><h3>Pilih variasi</h3>${Object.entries(p.variants||{}).filter(([key,v])=>v && v.enabled && Array.isArray(v.options) && v.options.length).map(([key,v])=>`<div class="product-variant-group"><div class="product-variant-label">${({color:'Warna',size:'Ukuran',model:'Model',custom:'Pilihan lainnya'})[key]||'Pilihan'}</div><div class="product-variant-options">${v.options.map(opt=>`<button type="button" class="product-variant-option" data-act="product-variant" data-key="${esc(key)}" data-option="${esc(opt)}" data-id="${esc(p.id)}">${esc(opt)}</button>`).join('')}</div></div>`).join('')}<p class="muted small">Pilih warna, model, atau ukuran untuk melihat foto khususnya. Tekan gambar utama untuk memperbesar.</p></section>` : ''}
       <div class="desc">${esc(p.description || 'Belum ada deskripsi.')}</div>
     </div>
   </div>
@@ -716,6 +731,25 @@ function viewProduct(id) {
     </form>
   </section>`;
   initIps(app); loadReviews(p.id); fillSellerBox(p);
+}
+function openImageFullscreen(src, alt='Gambar produk') {
+  if (!src) return;
+  document.querySelector('.image-lightbox')?.remove();
+  const box=document.createElement('div'); box.className='image-lightbox'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true'); box.setAttribute('aria-label','Gambar layar penuh');
+  const image=document.createElement('img'); image.src=src; image.alt=alt; image.title='Klik untuk menutup';
+  const close=document.createElement('button'); close.type='button'; close.className='image-lightbox-close'; close.setAttribute('aria-label','Tutup gambar'); close.textContent='×';
+  const caption=document.createElement('div'); caption.className='image-lightbox-caption'; caption.textContent='Klik gambar atau × untuk menutup';
+  box.append(image,close,caption); document.body.appendChild(box);
+  const shut=()=>box.remove(); close.addEventListener('click',shut); image.addEventListener('click',shut); box.addEventListener('click',e=>{if(e.target===box)shut();});
+  const escClose=e=>{if(e.key==='Escape'){shut();document.removeEventListener('keydown',escClose);}}; document.addEventListener('keydown',escClose);
+}
+function setProductGalleryImages(urls, alt) {
+  const gal=$('.gal'); if(!gal) return;
+  const clean=(Array.isArray(urls)?urls:[]).filter(Boolean);
+  const main=clean[0] || (S.products.find(x=>x.id===location.pathname.split('/').pop())?.images||[])[0] || '';
+  const mainBtn=$('.main-image-open',gal); if(mainBtn){mainBtn.innerHTML=imgTag(main,alt||'Gambar produk');mainBtn.dataset.src=main;}
+  const old=$('.thumbs',gal); if(old) old.remove();
+  if(clean.length>1){gal.insertAdjacentHTML('beforeend',`<div class="thumbs">${clean.map((u,i)=>`<button type="button" class="${i?'':'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Foto variasi ${i+1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>`);}
 }
 async function fillSellerBox(p) {
   if (!p.sellerId) return;
@@ -1494,7 +1528,15 @@ document.addEventListener('click', async e => {
   else if (act === 'cart-clear') { saveCart([]); viewCart(); renderCartCount(); }
   else if (act === 'cat') { S.cat = el.dataset.v; renderGrid(); }
   else if (act === 'wish') { e.preventDefault(); toggleWish(el.dataset.id); }
-  else if (act === 'thumb') { const m = $('.gal .main img'); m.src = el.dataset.src; $$('.thumbs button').forEach(b => b.classList.toggle('on', b === el)); }
+  else if (act === 'thumb') { const m = $('.gal .main img'); if(m){m.src = el.dataset.src; const mb=$('.main-image-open'); if(mb) mb.dataset.src=el.dataset.src;} $$('.thumbs button').forEach(b => b.classList.toggle('on', b === el)); }
+  else if (act === 'image-fullscreen') { const m=$('.gal .main img'); if(m) openImageFullscreen(m.currentSrc || m.src, m.alt || 'Gambar produk'); }
+  else if (act === 'product-variant') {
+    const product=S.products.find(x=>x.id===el.dataset.id); const key=el.dataset.key; const option=el.dataset.option; if(!product)return;
+    const photos=product.variants?.[key]?.photos?.[option] || [];
+    $$('.product-variant-option[data-key="'+key+'"]').forEach(b=>b.classList.toggle('selected',b===el));
+    const urls=photos.filter(Boolean).length ? photos.filter(Boolean) : (product.images||[]);
+    setProductGalleryImages(urls, product.name+' - '+option);
+  }
   else if (act === 'rate') { const n = +el.dataset.v; $$('#rIn button').forEach((b, i) => $('.star', b).classList.toggle('on', i < n)); $('input[name=rating]').value = n; }
   else if (act === 'qty') { const i = $('#qty'); i.value = Math.max(1, (parseInt(i.value) || 1) + (+el.dataset.d)); syncQty(); }
   else if (act === 'close') closeModal();
