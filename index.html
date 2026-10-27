@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#3f5f8a">
+<title>BeliDulu - Toko Online Praktis Tanpa Akun</title>
+<meta name="description" content="BeliDulu adalah toko online praktis. Belanja tanpa perlu membuat akun, isi alamat, dan pesanan langsung dikonfirmasi lewat WhatsApp.">
+<meta name="keywords" content="BeliDulu, beli dulu, toko online, belanja online, beli online tanpa akun, belanja lewat WhatsApp, toko online Indonesia, produk murah, pesan online, kirim ke seluruh Indonesia">
+<meta name="robots" content="index, follow">
+<meta name="author" content="BeliDulu">
+<link rel="icon" type="image/png" href="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
+<link rel="apple-touch-icon" href="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BeliDulu">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="BeliDulu - Toko Online Praktis Tanpa Akun">
+<meta property="og:description" content="Belanja tanpa akun, pesanan dikonfirmasi langsung lewat WhatsApp.">
+<meta property="og:image" content="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"BeliDulu","alternateName":"Beli Dulu","inLanguage":"id","description":"Toko online praktis tanpa akun, pesanan dikonfirmasi lewat WhatsApp.","image":"https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png"}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5f9; --surface:#ffffff; --ink:#1e293b; --muted:#64748b; --line:#dbe3ec;
+  --primary:#3f5f8a; --primary-d:#2f4a6e; --soft:#e8eef5; --soft2:#f6f8fb;
+  --danger:#8f4b4b; --ok:#4a7564; --radius:6px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;font-size:15px}
+a{color:var(--primary);text-decoration:none}
+a:hover{color:var(--primary-d)}
+h1,h2,h3,h4{margin:0 0 8px;font-weight:600;line-height:1.3;color:var(--ink)}
+h1{font-size:24px} h2{font-size:19px} h3{font-size:16px} h4{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+p{margin:0 0 10px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.hide{display:none!important}
+
+header.top{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-weight:600;font-size:18px;color:var(--primary-d);letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+.brand img{width:34px;height:34px;object-fit:contain;border-radius:6px;display:block}
+nav a{margin-left:22px;color:var(--muted);padding:6px 0;border-bottom:2px solid transparent}
+nav a.on{color:var(--primary-d);border-color:var(--primary)}
+main{padding:28px 0 56px;min-height:70vh}
+footer{border-top:1px solid var(--line);background:var(--surface);padding:22px 0;color:var(--muted);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+.btn{display:inline-block;background:var(--primary);color:#fff;border:1px solid var(--primary);padding:9px 18px;border-radius:var(--radius);font:inherit;font-weight:500;cursor:pointer;text-align:center;transition:background-color .15s}
+.btn:hover{background:var(--primary-d);color:#fff}
+.btn.ghost{background:transparent;color:var(--primary-d);border-color:var(--line)}
+.btn.ghost:hover{background:var(--soft)}
+.btn.block{display:block;width:100%}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn.off,.btn[disabled]{background:#c9d3df;border-color:#c9d3df;color:#fff;cursor:not-allowed}
+.linkbtn{background:none;border:0;color:var(--primary);cursor:pointer;font:inherit;padding:0}
+.linkbtn.danger{color:var(--danger)}
+.linkbtn:hover{text-decoration:underline}
+
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:9px 11px}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid #b7c8dc;outline-offset:1px;border-color:var(--primary)}
+input[type=checkbox]{width:auto}
+textarea{min-height:90px;resize:vertical}
+.field{margin-bottom:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px}
+.check input{margin:0}
+.req::after{content:" *";color:var(--danger)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px}
+.panel+.panel{margin-top:16px}
+.note{background:var(--soft2);border:1px solid var(--line);border-left:3px solid var(--primary);border-radius:var(--radius);padding:12px 14px;font-size:14px;margin-bottom:18px}
+.banner{background:#f4eeee;border:1px solid #e3d3d3;color:var(--danger);padding:10px 14px;border-radius:var(--radius);margin-bottom:16px;font-size:14px}
+
+.intro{margin-bottom:22px}
+.intro p{color:var(--muted);max-width:620px}
+.toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.toolbar input[type=search]{max-width:300px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:5px 13px;border-radius:99px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--soft);border-color:#c3d2e3;color:var(--primary-d)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.card .im{display:block;aspect-ratio:1/1;background:var(--soft)}
+.card .im img{width:100%;height:100%;object-fit:cover;display:block}
+.card .bd{padding:14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card .nm{color:var(--ink);font-weight:500;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .nm:hover{color:var(--primary-d)}
+.price{font-weight:600;font-size:17px;color:var(--primary-d)}
+.price-note{font-size:12px;color:var(--muted);margin-top:-2px}
+.card .btn{margin-top:auto}
+.card .sp{height:8px}
+.rate{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);min-height:18px}
+.star{fill:#cbd5e1;vertical-align:-2px}.star.on{fill:var(--primary)}
+.stars{display:inline-flex;gap:1px}
+
+.detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:34px;align-items:start}
+.gal .main{aspect-ratio:1/1;background:var(--soft);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.gal .main img{width:100%;height:100%;object-fit:contain;background:#fff;display:block}
+.thumbs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.thumbs button{width:62px;height:62px;padding:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;cursor:pointer}
+.thumbs button.on{border-color:var(--primary);outline:1px solid var(--primary)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.info .price{font-size:26px}
+.desc{white-space:pre-wrap;color:#2b3748;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.crumb{font-size:13px;margin-bottom:16px}
+
+.rev-list{margin-top:14px}
+.rev{padding:14px 0;border-top:1px solid var(--line)}
+.rev:first-child{border-top:0}
+.rev .meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.rev-photos{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.rev-photos img{width:84px;height:84px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line)}
+.star-input{display:flex;gap:2px}
+.star-input button{background:none;border:0;padding:2px;cursor:pointer;line-height:0}
+.help{background:var(--soft2);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;margin:8px 0 12px;font-size:13px}
+.help summary{cursor:pointer;color:var(--primary-d);font-weight:500}
+.help ol{margin:8px 0 0;padding-left:20px}
+.help li{margin-bottom:4px}
+.pv{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;font-size:13px;color:var(--muted)}
+.pv img{width:54px;height:54px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line)}
+
+.co{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start}
+.sum-item{display:flex;gap:12px;margin-bottom:14px}
+.sum-item img,.thumb{width:64px;height:64px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line);flex:none}
+.sum-line{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.qty{display:flex;gap:6px;align-items:center;max-width:150px}
+.qty button{width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:var(--radius);cursor:pointer;font:inherit;font-size:16px;color:var(--primary-d);flex:none}
+.qty input{text-align:center}
+
+.badge{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--soft);color:var(--primary-d);border:1px solid #c9d7e6;white-space:nowrap}
+.badge.cancel{background:#f4eeee;border-color:#e3d3d3;color:var(--danger)}
+.badge.done{background:#edf4f0;border-color:#cfe0d7;color:var(--ok)}
+.order-card+.order-card{margin-top:14px}
+.oc-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+.oc-item{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.oc-total{margin:10px 0;font-weight:500}
+.tl{list-style:none;margin:12px 0;padding:0 0 0 14px;border-left:2px solid var(--line)}
+.tl li{margin-bottom:8px;font-size:13px;position:relative}
+.tl li::before{content:"";position:absolute;left:-19px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--primary)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;font:inherit;color:var(--muted);cursor:pointer;margin-bottom:-1px}
+.tabs button.on{color:var(--primary-d);border-color:var(--primary);font-weight:500}
+.tabs .sp{flex:1}
+.list-row{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.list-row:first-child{border-top:0}
+.list-row .grow{flex:1;min-width:0}
+.list-row .t{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+details.order{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+details.order summary{list-style:none;cursor:pointer;padding:12px 16px;display:grid;grid-template-columns:150px 1fr auto auto;gap:12px;align-items:center}
+details.order summary::-webkit-details-marker{display:none}
+.o-body{padding:4px 16px 16px;border-top:1px solid var(--line)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:14px 0}
+.pre{white-space:pre-line;font-size:14px}
+.wa-row{display:grid;grid-template-columns:1fr 1.3fr auto;gap:10px;margin-bottom:10px;align-items:center}
+
+.overlay{position:fixed;inset:0;background:rgba(30,41,59,.45);z-index:50;display:flex;justify-content:center;align-items:flex-start;overflow:auto;padding:30px 14px}
+.modal{background:var(--surface);border-radius:8px;max-width:640px;width:100%;padding:22px;border:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--primary-d);color:#fff;padding:10px 18px;border-radius:var(--radius);z-index:80;font-size:14px;max-width:90vw}
+.empty{text-align:center;color:var(--muted);padding:48px 10px}
+
+@media (max-width:820px){
+  .detail,.co{grid-template-columns:1fr}
+  .cols{grid-template-columns:1fr}
+  details.order summary{grid-template-columns:1fr auto}
+}
+@media (max-width:640px){
+  .row2,.row3{grid-template-columns:1fr}
+  .wrap{padding:0 14px}
+  nav a{margin-left:14px}
+  .wa-row{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .card .bd{padding:10px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#/"><img src="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png" alt="Logo BeliDulu"><span id="brand">BeliDulu</span></a>
+    <nav>
+      <a href="#/" data-nav="">Produk</a>
+      <a href="#/pesanan" data-nav="pesanan">Pesanan saya</a>
+    </nav>
+  </div>
+</header>
+<main><div class="wrap" id="app"></div></main>
+<footer>
+  <div class="wrap">
+    <div><span id="footName">BeliDulu</span><div id="footNote"></div></div>
+  </div>
+</footer>
+<div id="modal" class="overlay hide"><div class="modal" role="dialog" aria-modal="true"></div></div>
+<div id="toast" class="toast hide" role="status"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-analytics.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBXfOJBOOyiWCPU7wWZqluiK7JlcO6GdSo",
+  authDomain: "belidulu-9978c.firebaseapp.com",
+  projectId: "belidulu-9978c",
+  storageBucket: "belidulu-9978c.firebasestorage.app",
+  messagingSenderId: "1058601293095",
+  appId: "1:1058601293095:web:58342ed9c4a22182294502",
+  measurementId: "G-Y8X8Q511FC"
+};
+const fbApp = initializeApp(firebaseConfig);
+try { getAnalytics(fbApp); } catch (e) {}
+const db = getFirestore(fbApp);
+
+/* ====== Pengaturan dasar ====== */
+const ADMIN_PASSWORD = "BeliDuluajaya";   // ubah di sini jika ingin mengganti kata sandi admin
+const STATUSES = ['Menunggu konfirmasi','Diproses','Dikirim','Sampai','Selesai','Dibatalkan'];
+const CANCELABLE = ['Menunggu konfirmasi','Diproses'];
+const PROVINSI = ['Aceh','Sumatera Utara','Sumatera Barat','Riau','Kepulauan Riau','Jambi','Sumatera Selatan','Bangka Belitung','Bengkulu','Lampung','DKI Jakarta','Jawa Barat','Banten','Jawa Tengah','DI Yogyakarta','Jawa Timur','Bali','Nusa Tenggara Barat','Nusa Tenggara Timur','Kalimantan Barat','Kalimantan Tengah','Kalimantan Selatan','Kalimantan Timur','Kalimantan Utara','Sulawesi Utara','Gorontalo','Sulawesi Tengah','Sulawesi Barat','Sulawesi Selatan','Sulawesi Tenggara','Maluku','Maluku Utara','Papua','Papua Barat','Papua Barat Daya','Papua Selatan','Papua Tengah','Papua Pegunungan'];
+
+/* ====== Helper ====== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rupiah = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+const fmtDate = t => t ? new Date(t).toLocaleString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+const normPhone = p => { let d = String(p || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '62' + d.slice(1); else if (d.startsWith('8')) d = '62' + d; return d; };
+const waLink = (num, text) => 'https://wa.me/' + normPhone(num) + '?text=' + encodeURIComponent(text);
+const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="600" height="600" fill="#e8eef5"/><text x="50%" y="50%" fill="#8a9bb0" font-family="sans-serif" font-size="22" text-anchor="middle">Tanpa gambar</text></svg>');
+window.PH = PH;
+const imgTag = (src, alt, cls = '') => `<img ${cls ? `class="${cls}" ` : ''}src="${esc(src || PH)}" alt="${esc(alt)}" loading="lazy" onerror="this.onerror=null;this.src=window.PH">`;
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.remove('hide');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hide'), 3800);
+}
+function openModal(html) { const m = $('#modal'); $('.modal', m).innerHTML = html; m.classList.remove('hide'); }
+function closeModal() { $('#modal').classList.add('hide'); }
+
+/* Ambil link gambar otomatis dari teks / kode HTML / BBCode / link imgbb */
+function extractImages(text) {
+  text = String(text || '').replace(/&amp;/g, '&');
+  const found = []; let m;
+  const attr = /(?:src|data-src)\s*=\s*["']([^"']+)["']/gi;
+  while ((m = attr.exec(text))) found.push(m[1]);
+  const href = /href\s*=\s*["']([^"']+)["']/gi;
+  while ((m = href.exec(text))) found.push(m[1]);
+  const bare = /https?:\/\/[^\s"'<>\[\]()]+/gi;
+  while ((m = bare.exec(text))) found.push(m[0]);
+  const direct = u => /^https?:\/\/i\.ibb\.co(\.com)?\//i.test(u) || /\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?[^\s]*)?$/i.test(u);
+  const out = [];
+  for (let u of found) {
+    u = u.trim().replace(/^http:\/\//i, 'https://');
+    if (direct(u) && !out.includes(u)) out.push(u);
+  }
+  return out;
+}
+const stars = r => Array.from({length: 5}, (_, i) =>
+  `<svg viewBox="0 0 24 24" width="14" height="14" class="star${i < Math.round(r) ? ' on' : ''}" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/></svg>`).join('');
+const avgOf = p => p.ratingCount ? p.ratingSum / p.ratingCount : 0;
+const badge = s => `<span class="badge ${s === 'Dibatalkan' ? 'cancel' : (s === 'Selesai' || s === 'Sampai') ? 'done' : ''}">${esc(s)}</span>`;
+const fmtAddress = c => [
+  `${c.jalan}${c.rumah ? ', ' + c.rumah : ''} No. ${c.noRumah}`,
+  `Kec. ${c.kecamatan}, ${c.kota}`,
+  `${c.provinsi} ${c.kodepos}`,
+  c.detail ? `Detail: ${c.detail}` : ''
+].filter(Boolean).join('\n');
+
+const IMG_STEPS = `<details class="help"><summary>Cara mengirim foto lewat imgbb</summary><ol>
+<li>Buka <a href="https://imgbb.com" target="_blank" rel="noopener">imgbb.com</a>, lalu klik tombol untuk mulai upload.</li>
+<li>Pilih foto dari galeri atau komputer. Boleh memilih lebih dari satu.</li>
+<li>Klik Upload dan tunggu sampai selesai.</li>
+<li>Pada halaman hasil, buka pilihan kode (embed codes), lalu salin salah satu: Direct link, atau kode HTML (yang diawali <code>&lt;img src=</code> atau <code>&lt;a href=</code>).</li>
+<li>Tempel di kolom ini. Sistem otomatis mencari link gambar yang diperlukan. Untuk beberapa foto, tempel satu per baris.</li>
+<li>Periksa pratinjau di bawah kolom. Jika gambar muncul, link sudah benar.</li></ol></details>`;
+
+/* ====== State ====== */
+const S = {
+  products: [], ready: false, err: '',
+  settings: { storeName: 'BeliDulu', tagline: 'Belanja praktis tanpa akun. Data pesanan dikirim langsung ke WhatsApp admin.', footerNote: '', waNumbers: [],
+    seoDescription: 'BeliDulu adalah toko online praktis. Belanja tanpa perlu membuat akun, isi alamat, dan pesanan langsung dikonfirmasi lewat WhatsApp.',
+    seoKeywords: 'BeliDulu, beli dulu, toko online, belanja online, beli online tanpa akun, belanja lewat WhatsApp, toko online Indonesia, produk murah, pesan online, kirim ke seluruh Indonesia' },
+  search: '', cat: 'Semua', cur: null,
+  admin: sessionStorage.getItem('bd_admin') === '1',
+  tab: 'orders', orders: [], ordFilter: 'Semua', ordQ: '', openOrders: new Set(),
+  my: {}, unsubOrders: null
+};
+const getMyCodes = () => { try { return JSON.parse(localStorage.getItem('bd_orders') || '[]'); } catch (e) { return []; } };
+const addMyCode = c => { const l = getMyCodes(); if (!l.includes(c)) { l.unshift(c); localStorage.setItem('bd_orders', JSON.stringify(l.slice(0, 50))); } };
+const app = $('#app');
+/* Halaman pengelola dibuka lewat alamat #/belidulu (tidak ada tautannya di beranda) */
+const currentPage = () => { const p = (location.hash || '#/').slice(2).split('/')[0]; return p === 'belidulu' ? 'admin' : (p === 'admin' ? '' : p); };
+
+/* ====== Firestore listeners ====== */
+onSnapshot(collection(db, 'products'), snap => {
+  S.products = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const first = !S.ready; S.ready = true; S.err = '';
+  const pg = currentPage();
+  if (first) route();
+  else if (pg === '' && $('#grid')) renderGrid();
+  else if (pg === 'admin' && S.admin && S.tab === 'products') renderAdminProducts();
+}, e => { console.error(e); S.ready = true; S.err = 'Tidak dapat terhubung ke database. Pastikan Firestore sudah diaktifkan dan aturan (rules) mengizinkan akses.'; route(); });
+
+onSnapshot(doc(db, 'settings', 'store'), snap => {
+  if (snap.exists()) S.settings = { ...S.settings, ...snap.data() };
+  applySettings();
+}, () => {});
+
+function applySettings() {
+  const n = S.settings.storeName || 'BeliDulu';
+  $('#brand').textContent = n; $('#footName').textContent = n;
+  $('#footNote').textContent = S.settings.footerNote || '';
+  const setMeta = (sel, val) => { const m = $(sel); if (m && val) m.setAttribute('content', val); };
+  setMeta('meta[name=description]', S.settings.seoDescription);
+  setMeta('meta[name=keywords]', S.settings.seoKeywords);
+  setMeta('meta[property="og:description"]', S.settings.seoDescription);
+  setMeta('meta[property="og:site_name"]', n);
+  const pg = currentPage(); if (pg === '') document.title = n + ' - Toko Online Praktis Tanpa Akun';
+}
+function startAdminListeners() {
+  if (S.unsubOrders) return;
+  S.unsubOrders = onSnapshot(collection(db, 'orders'), snap => {
+    S.orders = snap.docs.map(d => ({ code: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    if (currentPage() === 'admin' && S.admin) {
+      if (S.tab === 'orders') renderAdminOrders();
+      const tb = $('[data-tab="orders"]'); if (tb) tb.textContent = tabLabel();
+    }
+  }, e => console.error(e));
+}
+const tabLabel = () => { const n = S.orders.filter(o => o.status === 'Menunggu konfirmasi').length; return 'Pesanan' + (n ? ` (${n} baru)` : ''); };
+
+/* ====== Router ====== */
+function route() {
+  const parts = (location.hash || '#/').slice(2).split('/');
+  const page = currentPage(); const arg = decodeURIComponent(parts[1] || '');
+  window.scrollTo(0, 0); closeModal();
+  $$('nav a').forEach(a => a.classList.toggle('on', a.dataset.nav === page));
+  document.title = (S.settings.storeName || 'BeliDulu') + (page === '' ? ' - Toko Online Praktis Tanpa Akun' : '');
+  if (page === 'produk') viewProduct(arg);
+  else if (page === 'beli') viewCheckout(arg);
+  else if (page === 'pesanan') viewOrders();
+  else if (page === 'admin') viewAdmin();
+  else viewHome();
+}
+window.addEventListener('hashchange', route);
+const errBanner = () => S.err ? `<div class="banner">${esc(S.err)}</div>` : '';
+const loadingHTML = '<div class="empty">Memuat...</div>';
+
+/* ====== Beranda ====== */
+function viewHome() {
+  if (!S.ready) { app.innerHTML = loadingHTML; return; }
+  app.innerHTML = `${errBanner()}
+  <section class="intro"><h1>Produk</h1><p>${esc(S.settings.tagline)}</p></section>
+  <div class="toolbar"><input id="q" type="search" placeholder="Cari produk" aria-label="Cari produk" value="${esc(S.search)}"><div class="chips" id="cats"></div></div>
+  <div class="grid" id="grid"></div>`;
+  renderGrid();
+}
+function renderGrid() {
+  const active = S.products.filter(p => p.active !== false);
+  const cats = ['Semua', ...new Set(active.map(p => (p.category || '').trim()).filter(Boolean))];
+  if (!cats.includes(S.cat)) S.cat = 'Semua';
+  $('#cats').innerHTML = cats.length > 1 ? cats.map(c => `<button class="chip${c === S.cat ? ' on' : ''}" data-act="cat" data-v="${esc(c)}">${esc(c)}</button>`).join('') : '';
+  const q = S.search.trim().toLowerCase();
+  const list = active.filter(p => (S.cat === 'Semua' || p.category === S.cat) && (!q || (p.name || '').toLowerCase().includes(q)));
+  $('#grid').innerHTML = list.length ? list.map(cardHTML).join('') :
+    `<div class="empty" style="grid-column:1/-1">${active.length ? 'Produk tidak ditemukan.' : 'Belum ada produk.'}</div>`;
+}
+function cardHTML(p) {
+  const out = typeof p.stock === 'number' && p.stock <= 0;
+  const avg = avgOf(p);
+  return `<article class="card">
+    <a class="im" href="#/produk/${esc(p.id)}">${imgTag((p.images || [])[0], p.name)}</a>
+    <div class="bd">
+      <a class="nm" href="#/produk/${esc(p.id)}">${esc(p.name)}</a>
+      <div class="rate">${p.ratingCount ? `<span class="stars">${stars(avg)}</span><span>${avg.toFixed(1)} (${p.ratingCount})</span>` : ''}</div>
+      <div class="price">${rupiah(p.price)}</div>
+      <div class="price-note">(belum termasuk ongkir)</div>
+      <div class="sp"></div>
+      ${out ? '<span class="btn off block">Stok habis</span>' : `<a class="btn block" href="#/beli/${esc(p.id)}">Beli</a>`}
+    </div></article>`;
+}
+
+/* ====== Detail produk + ulasan ====== */
+function viewProduct(id) {
+  if (!S.ready) { app.innerHTML = loadingHTML; return; }
+  const p = S.products.find(x => x.id === id);
+  if (!p || p.active === false) { app.innerHTML = `${errBanner()}<div class="empty">Produk tidak ditemukan.<br><a href="#/">Kembali ke daftar produk</a></div>`; return; }
+  document.title = p.name + ' - ' + (S.settings.storeName || '');
+  const imgs = p.images || []; const out = typeof p.stock === 'number' && p.stock <= 0; const avg = avgOf(p);
+  app.innerHTML = `<div class="crumb"><a href="#/">Produk</a> / ${esc(p.name)}</div>
+  <div class="detail">
+    <div class="gal"><div class="main">${imgTag(imgs[0], p.name)}</div>
+      ${imgs.length > 1 ? `<div class="thumbs">${imgs.map((u, i) => `<button class="${i ? '' : 'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Gambar ${i + 1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : ''}
+    </div>
+    <div class="info">
+      <h1>${esc(p.name)}</h1>
+      <div class="rate" style="margin-bottom:10px">${p.ratingCount ? `<span class="stars">${stars(avg)}</span><span>${avg.toFixed(1)} dari ${p.ratingCount} ulasan</span>` : '<span>Belum ada ulasan</span>'}</div>
+      <div class="price">${rupiah(p.price)}</div>
+      <div class="price-note" style="margin-bottom:14px">(belum termasuk ongkir)</div>
+      ${p.category ? `<p class="small muted">Kategori: ${esc(p.category)}</p>` : ''}
+      ${typeof p.stock === 'number' ? `<p class="small muted">Stok: ${p.stock > 0 ? p.stock : 'habis'}</p>` : ''}
+      ${out ? '<span class="btn off">Stok habis</span>' : `<a class="btn" href="#/beli/${esc(p.id)}">Beli</a>`}
+      <div class="desc">${esc(p.description || 'Belum ada deskripsi.')}</div>
+    </div>
+  </div>
+  <section class="panel" style="margin-top:34px" id="reviews">
+    <h2>Ulasan</h2>
+    <div class="rev-list" id="revList"><p class="muted">Memuat ulasan...</p></div>
+  </section>
+  <section class="panel">
+    <h3>Tulis ulasan</h3>
+    <form data-form="review" data-id="${esc(p.id)}">
+      <div class="row2">
+        <div class="field"><label class="req">Nama</label><input name="name" required maxlength="60"></div>
+        <div class="field"><label class="req">Bintang</label>
+          <div class="star-input" id="rIn">${[1,2,3,4,5].map(n => `<button type="button" data-act="rate" data-v="${n}" aria-label="${n} bintang"><svg viewBox="0 0 24 24" width="26" height="26" class="star"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/></svg></button>`).join('')}</div>
+          <input type="hidden" name="rating" value="0"></div>
+      </div>
+      <div class="field"><label>Komentar</label><textarea name="comment" maxlength="800" placeholder="Ceritakan pengalaman Anda"></textarea></div>
+      <div class="field"><label>Foto (opsional): tempel link atau kode dari imgbb</label>
+        <textarea name="photos" data-preview="rvPv" placeholder="https://i.ibb.co/... atau &lt;img src=&quot;...&quot;&gt;"></textarea>
+        <div class="pv" id="rvPv"></div>${IMG_STEPS}</div>
+      <button class="btn" type="submit">Kirim ulasan</button>
+    </form>
+  </section>`;
+  loadReviews(p.id);
+}
+async function loadReviews(pid) {
+  const box = $('#revList'); if (!box) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'reviews'), where('productId', '==', pid)));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    box.innerHTML = list.length ? list.map(r => `<div class="rev"><div class="meta"><strong>${esc(r.name)}</strong><span class="stars">${stars(r.rating)}</span><span class="muted small">${fmtDate(r.createdAt)}</span></div>
+      ${r.comment ? `<div class="pre">${esc(r.comment)}</div>` : ''}
+      ${(r.photos || []).length ? `<div class="rev-photos">${r.photos.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">${imgTag(u, 'Foto ulasan')}</a>`).join('')}</div>` : ''}</div>`).join('')
+      : '<p class="muted">Belum ada ulasan. Jadilah yang pertama.</p>';
+  } catch (e) { box.innerHTML = '<p class="muted">Ulasan tidak dapat dimuat.</p>'; }
+}
+async function submitReview(form) {
+  const f = new FormData(form); const pid = form.dataset.id;
+  const rating = parseInt(f.get('rating')) || 0; const name = (f.get('name') || '').trim();
+  if (!name) return toast('Nama wajib diisi.');
+  if (rating < 1) return toast('Pilih jumlah bintang terlebih dahulu.');
+  const photos = extractImages(f.get('photos'));
+  if ((f.get('photos') || '').trim() && !photos.length) return toast('Link foto tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  const btn = $('button[type=submit]', form); btn.disabled = true;
+  try {
+    await addDoc(collection(db, 'reviews'), { productId: pid, name, rating, comment: (f.get('comment') || '').trim(), photos, createdAt: Date.now() });
+    try { await updateDoc(doc(db, 'products', pid), { ratingSum: increment(rating), ratingCount: increment(1) }); } catch (e) {}
+    form.reset(); $$('#rIn .star').forEach(s => s.classList.remove('on')); $('#rvPv').innerHTML = '';
+    toast('Ulasan terkirim. Terima kasih.'); loadReviews(pid);
+  } catch (e) { console.error(e); toast('Gagal mengirim ulasan.'); }
+  btn.disabled = false;
+}
+
+/* ====== Checkout ====== */
+function viewCheckout(id) {
+  if (!S.ready) { app.innerHTML = loadingHTML; return; }
+  const p = S.products.find(x => x.id === id);
+  if (!p || p.active === false) { app.innerHTML = '<div class="empty">Produk tidak ditemukan.<br><a href="#/">Kembali ke daftar produk</a></div>'; return; }
+  if (typeof p.stock === 'number' && p.stock <= 0) { app.innerHTML = '<div class="empty">Maaf, stok produk ini habis.<br><a href="#/">Kembali ke daftar produk</a></div>'; return; }
+  S.cur = p; document.title = 'Beli ' + p.name;
+  const was = S.settings.waNumbers || [];
+  app.innerHTML = `<div class="crumb"><a href="#/">Produk</a> / <a href="#/produk/${esc(p.id)}">${esc(p.name)}</a> / Data pembeli</div>
+  ${!was.length ? '<div class="banner">Nomor WhatsApp admin belum diatur, sehingga pesanan belum dapat dikirim.</div>' : ''}
+  <div class="co">
+    <form class="panel" data-form="checkout" autocomplete="on">
+      <h2>Data pembeli</h2>
+      <p class="muted small">Tidak perlu membuat akun. Isi data berikut dengan lengkap agar pesanan dapat diproses.</p>
+      <div class="row2">
+        <div class="field"><label class="req">Nama lengkap</label><input name="name" required autocomplete="name"></div>
+        <div class="field"><label class="req">Nomor telepon</label><input name="phone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="08xxxxxxxxxx"></div>
+      </div>
+      <div class="field"><label class="req">Provinsi</label><select name="provinsi" required><option value="">Pilih provinsi</option>${PROVINSI.map(x => `<option>${x}</option>`).join('')}</select></div>
+      <div class="row3">
+        <div class="field"><label class="req">Kota / Kabupaten</label><input name="kota" required></div>
+        <div class="field"><label class="req">Kecamatan</label><input name="kecamatan" required></div>
+        <div class="field"><label class="req">Kode pos</label><input name="kodepos" required inputmode="numeric" maxlength="5" pattern="\\d{5}"></div>
+      </div>
+      <div class="field"><label class="req">Nama jalan</label><input name="jalan" required></div>
+      <div class="row2">
+        <div class="field"><label>Nama rumah / gedung</label><input name="rumah"></div>
+        <div class="field"><label class="req">Nomor rumah</label><input name="noRumah" required></div>
+      </div>
+      <div class="field"><label>Detail lainnya</label><textarea name="detail" placeholder="Contoh: Blok / unit no., patokan"></textarea></div>
+      ${was.length > 1 ? `<div class="field"><label>Kirim pesanan ke admin</label><select name="wa">${was.map((w, i) => `<option value="${i}">${esc(w.label || 'Admin ' + (i + 1))}</option>`).join('')}</select></div>` : '<input type="hidden" name="wa" value="0">'}
+      <button class="btn" type="submit">Konfirmasi pesanan</button>
+      <p class="muted small" style="margin-top:10px">Setelah dikonfirmasi, rincian pesanan akan dikirim ke WhatsApp admin.</p>
+    </form>
+    <aside class="panel">
+      <h2>Ringkasan</h2>
+      <div class="sum-item">${imgTag((p.images || [])[0], p.name)}<div><div>${esc(p.name)}</div><div class="muted small">${rupiah(p.price)} per item</div></div></div>
+      <div class="field" style="margin-bottom:8px"><label>Jumlah</label>
+        <div class="qty"><button type="button" data-act="qty" data-d="-1" aria-label="Kurangi">-</button><input form="qtyDummy" id="qty" type="number" min="1" ${typeof p.stock === 'number' ? `max="${p.stock}"` : ''} value="1" aria-label="Jumlah"><button type="button" data-act="qty" data-d="1" aria-label="Tambah">+</button></div></div>
+      <div class="sum-line"><span>Subtotal</span><strong id="sumTotal">${rupiah(p.price)}</strong></div>
+      <div class="muted small">(belum termasuk ongkir)</div>
+    </aside>
+  </div>`;
+}
+function currentQty() { const p = S.cur; let q = Math.max(1, parseInt($('#qty').value) || 1); if (typeof p.stock === 'number') q = Math.min(q, p.stock); return q; }
+function syncQty() { const q = currentQty(); $('#qty').value = q; $('#sumTotal').textContent = rupiah(S.cur.price * q); }
+const makeCode = () => { const d = new Date(); const pad = n => String(n).padStart(2, '0'); const r = Math.random().toString(36).slice(2, 6).toUpperCase(); return `BD-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${r}`; };
+
+async function submitCheckout(form) {
+  const p = S.cur; const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim();
+  const qty = currentQty();
+  const phone = normPhone(v('phone'));
+  if (phone.length < 10 || phone.length > 15) return toast('Nomor telepon tidak valid.');
+  if (!/^\d{5}$/.test(v('kodepos'))) return toast('Kode pos harus 5 angka.');
+  const was = S.settings.waNumbers || [];
+  if (!was.length) return toast('Nomor WhatsApp admin belum diatur.');
+  const wa = was[parseInt(v('wa')) || 0] || was[0];
+  const customer = { name: v('name'), phone, provinsi: v('provinsi'), kota: v('kota'), kecamatan: v('kecamatan'), kodepos: v('kodepos'), jalan: v('jalan'), rumah: v('rumah'), noRumah: v('noRumah'), detail: v('detail') };
+  const code = makeCode(); const now = Date.now();
+  const order = { createdAt: now, updatedAt: now, status: 'Menunggu konfirmasi', productId: p.id,
+    items: [{ productId: p.id, name: p.name, price: p.price, qty, image: (p.images || [])[0] || '' }],
+    subtotal: p.price * qty, customer, waNumber: wa.number, waLabel: wa.label || '', resi: '', note: '',
+    history: [{ status: 'Menunggu konfirmasi', note: 'Pesanan dibuat', at: now, by: 'pembeli' }] };
+  const btn = $('button[type=submit]', form); btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    await setDoc(doc(db, 'orders', code), order);
+    if (typeof p.stock === 'number') { try { await updateDoc(doc(db, 'products', p.id), { stock: increment(-qty) }); } catch (e) {} }
+    addMyCode(code);
+  } catch (e) { console.error(e); btn.disabled = false; btn.textContent = 'Konfirmasi pesanan'; return toast('Pesanan gagal disimpan. Coba lagi.'); }
+  const msg = [`*Pesanan baru - ${S.settings.storeName}*`, `Kode pesanan: ${code}`, '',
+    `Produk: ${p.name}`, `Jumlah: ${qty}`, `Harga satuan: ${rupiah(p.price)}`, `Subtotal: ${rupiah(order.subtotal)} (belum termasuk ongkir)`, '',
+    '*Data pembeli*', `Nama: ${customer.name}`, `No. telepon: ${customer.phone}`, '',
+    '*Alamat pengiriman*', fmtAddress(customer), '', 'Mohon konfirmasi pesanan dan total ongkir. Terima kasih.'].join('\n');
+  const url = waLink(wa.number, msg);
+  app.innerHTML = `<div class="panel" style="max-width:560px;margin:0 auto">
+    <h2>Pesanan tersimpan</h2>
+    <p>Kode pesanan Anda: <strong>${esc(code)}</strong></p>
+    <p class="muted">Langkah terakhir: kirim rincian pesanan ke WhatsApp admin agar segera diproses dan ongkir dikonfirmasi. Jika WhatsApp tidak terbuka otomatis, tekan tombol di bawah.</p>
+    <div class="actions"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Kirim ke WhatsApp</a><a class="btn ghost" href="#/pesanan">Lihat pesanan saya</a></div>
+    <p class="muted small" style="margin-top:14px">Simpan kode pesanan dan nomor telepon Anda untuk memeriksa status pesanan.</p></div>`;
+  window.scrollTo(0, 0); window.open(url, '_blank');
+}
+
+/* ====== Pesanan pembeli ====== */
+async function loadMyOrder(code) {
+  const s = await getDoc(doc(db, 'orders', code));
+  if (s.exists()) { S.my[code] = { code, ...s.data() }; return S.my[code]; }
+  delete S.my[code]; return null;
+}
+async function viewOrders() {
+  app.innerHTML = `${errBanner()}<h1>Pesanan saya</h1>
+  <div class="note"><strong>Penting:</strong> setelah pesanan sampai di rumah, mohon kabari admin melalui WhatsApp (tersedia tombolnya pada pesanan yang sedang dikirim). Pesanan hanya dapat dibatalkan sebelum status Dikirim.</div>
+  <form class="panel" data-form="lookup"><h3>Cari pesanan</h3><p class="muted small">Pesanan yang dibuat di perangkat ini otomatis tampil. Untuk pesanan lain, masukkan kode pesanan dan nomor telepon.</p>
+    <div class="row3"><div class="field"><label>Kode pesanan</label><input name="code" placeholder="BD-261027-XXXX"></div><div class="field"><label>Nomor telepon</label><input name="phone" type="tel"></div><div class="field"><label>&nbsp;</label><button class="btn block" type="submit">Cari</button></div></div></form>
+  <div style="margin:18px 0 10px;display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Daftar pesanan</h2><button class="btn ghost sm" data-act="refresh-all">Update pesanan</button></div>
+  <div id="myList"><p class="muted">Memuat...</p></div>`;
+  const codes = getMyCodes();
+  await Promise.all(codes.map(c => loadMyOrder(c).catch(() => null)));
+  renderMyList();
+}
+function renderMyList() {
+  const box = $('#myList'); if (!box) return;
+  const list = getMyCodes().map(c => S.my[c]).filter(Boolean);
+  box.innerHTML = list.length ? list.map(buyerCard).join('') : '<div class="empty">Belum ada pesanan di perangkat ini.</div>';
+}
+function buyerCard(o) {
+  const canCancel = CANCELABLE.includes(o.status);
+  const num = o.waNumber;
+  const arrivedMsg = `Halo admin, saya ingin mengabari bahwa pesanan ${o.code} atas nama ${o.customer.name} sudah sampai di rumah.`;
+  const helpMsg = `Halo admin, saya ingin menanyakan pesanan ${o.code} atas nama ${o.customer.name}.`;
+  return `<article class="panel order-card" data-code="${esc(o.code)}">
+    <div class="oc-head"><div><strong>${esc(o.code)}</strong><div class="muted small">${fmtDate(o.createdAt)}</div></div>${badge(o.status)}</div>
+    ${o.items.map(i => `<div class="oc-item">${imgTag(i.image, i.name, 'thumb')}<div><div>${esc(i.name)}</div><div class="muted small">${i.qty} x ${rupiah(i.price)}</div></div></div>`).join('')}
+    <div class="oc-total">Subtotal ${rupiah(o.subtotal)} <span class="muted small">(belum termasuk ongkir)</span></div>
+    ${o.resi ? `<p class="small"><strong>Resi / info pengiriman:</strong> ${esc(o.resi)}</p>` : ''}
+    <ul class="tl">${(o.history || []).map(h => `<li><strong>${esc(h.status)}</strong>${h.note ? ' - ' + esc(h.note) : ''}<div class="muted">${fmtDate(h.at)}</div></li>`).join('')}</ul>
+    ${['Dikirim', 'Sampai'].includes(o.status) ? '<div class="note" style="margin-bottom:0">Jika pesanan sudah sampai di rumah, mohon kabari admin agar pesanan dapat diselesaikan.</div>' : ''}
+    <div class="actions">
+      <button class="btn ghost sm" data-act="refresh" data-code="${esc(o.code)}">Update pesanan</button>
+      ${o.status === 'Dikirim' ? `<button class="btn sm" data-act="arrived" data-code="${esc(o.code)}">Pesanan sudah sampai</button>` : ''}
+      ${['Dikirim', 'Sampai'].includes(o.status) ? `<a class="btn sm" href="${esc(waLink(num, arrivedMsg))}" target="_blank" rel="noopener">Kabari admin</a>` : ''}
+      ${canCancel ? `<button class="linkbtn danger" data-act="cancel" data-code="${esc(o.code)}">Batalkan pesanan</button>` : ''}
+      <a class="linkbtn" href="${esc(waLink(num, helpMsg))}" target="_blank" rel="noopener">Hubungi admin</a>
+    </div></article>`;
+}
+async function lookupOrder(form) {
+  const f = new FormData(form); const code = (f.get('code') || '').toString().trim().toUpperCase(); const ph = normPhone(f.get('phone'));
+  if (!code || !ph) return toast('Isi kode pesanan dan nomor telepon.');
+  try {
+    const o = await loadMyOrder(code);
+    if (!o || normPhone(o.customer.phone) !== ph) { delete S.my[code]; return toast('Pesanan tidak ditemukan atau nomor telepon tidak cocok.'); }
+    addMyCode(code); form.reset(); renderMyList(); toast('Pesanan ditemukan.');
+  } catch (e) { toast('Gagal mencari pesanan.'); }
+}
+
+/* Ubah status (dipakai pembeli dan admin), stok ikut disesuaikan saat batal */
+async function changeStatus(o, newStatus, { note = '', resi = null, by = 'admin' } = {}) {
+  const upd = { status: newStatus, updatedAt: Date.now() };
+  if (resi !== null) upd.resi = resi;
+  if (newStatus !== o.status || note) upd.history = arrayUnion({ status: newStatus, note, at: Date.now(), by });
+  await updateDoc(doc(db, 'orders', o.code), upd);
+  const wasC = o.status === 'Dibatalkan', isC = newStatus === 'Dibatalkan';
+  if (wasC !== isC) {
+    for (const it of o.items || []) {
+      try {
+        const ref = doc(db, 'products', it.productId); const s = await getDoc(ref);
+        if (s.exists() && typeof s.data().stock === 'number') await updateDoc(ref, { stock: increment(isC ? it.qty : -it.qty) });
+      } catch (e) {}
+    }
+  }
+}
+
+/* ====== Admin ====== */
+function viewAdmin() {
+  if (!S.admin) {
+    app.innerHTML = `<form class="panel" data-form="login" style="max-width:380px;margin:30px auto"><h2>BeliDulu</h2>
+      <div class="field"><label>Kata sandi</label><input type="password" name="pw" required autocomplete="current-password"></div>
+      <button class="btn block" type="submit">Masuk</button></form>`;
+    return;
+  }
+  startAdminListeners();
+  app.innerHTML = `${errBanner()}<h1>BeliDulu</h1>
+  <div class="tabs">
+    <button data-act="tab" data-tab="orders" class="${S.tab === 'orders' ? 'on' : ''}">${tabLabel()}</button>
+    <button data-act="tab" data-tab="products" class="${S.tab === 'products' ? 'on' : ''}">Produk</button>
+    <button data-act="tab" data-tab="reviews" class="${S.tab === 'reviews' ? 'on' : ''}">Ulasan</button>
+    <button data-act="tab" data-tab="settings" class="${S.tab === 'settings' ? 'on' : ''}">Pengaturan</button>
+    <span class="sp"></span><button data-act="logout">Keluar</button></div>
+  <div id="adminBody"></div>`;
+  renderAdminTab();
+}
+function renderAdminTab() {
+  if (S.tab === 'products') {
+    $('#adminBody').innerHTML = `<div class="actions" style="margin:0 0 14px;justify-content:space-between"><h2 style="margin:0">Produk</h2><button class="btn" data-act="p-new">Tambah produk</button></div><div class="panel" id="pList"></div>`;
+    renderAdminProducts();
+  } else if (S.tab === 'reviews') { renderAdminReviews(); }
+  else if (S.tab === 'settings') { renderAdminSettings(); }
+  else {
+    $('#adminBody').innerHTML = `<div class="toolbar"><input id="oq" type="search" placeholder="Cari kode atau nama pembeli" value="${esc(S.ordQ)}" style="max-width:280px">
+      <select id="of" style="max-width:220px">${['Semua', ...STATUSES].map(s => `<option${s === S.ordFilter ? ' selected' : ''}>${s}</option>`).join('')}</select></div><div id="oList"></div>`;
+    renderAdminOrders();
+  }
+}
+function renderAdminProducts() {
+  const box = $('#pList'); if (!box) return;
+  box.innerHTML = S.products.length ? S.products.map(p => `<div class="list-row">
+    ${imgTag((p.images || [])[0], p.name, 'thumb')}
+    <div class="grow"><div class="t">${esc(p.name)}</div><div class="muted small">${rupiah(p.price)}${p.category ? ' | ' + esc(p.category) : ''} | Stok: ${typeof p.stock === 'number' ? p.stock : 'tidak dibatasi'} | ${p.active === false ? 'Disembunyikan' : 'Tampil'}</div></div>
+    <button class="btn ghost sm" data-act="p-edit" data-id="${esc(p.id)}">Ubah</button>
+    <button class="linkbtn danger" data-act="p-del" data-id="${esc(p.id)}">Hapus</button></div>`).join('') : '<div class="empty">Belum ada produk. Klik "Tambah produk".</div>';
+}
+function productForm(p) {
+  p = p || {};
+  openModal(`<h2>${p.id ? 'Ubah produk' : 'Tambah produk'}</h2>
+  <form data-form="product"><input type="hidden" name="id" value="${esc(p.id || '')}">
+    <div class="field"><label class="req">Nama produk</label><input name="name" required value="${esc(p.name || '')}"></div>
+    <div class="row3">
+      <div class="field"><label class="req">Harga (Rp)</label><input name="price" type="number" min="0" required value="${p.price ?? ''}"></div>
+      <div class="field"><label>Kategori</label><input name="category" value="${esc(p.category || '')}"></div>
+      <div class="field"><label>Stok (kosong = tidak dibatasi)</label><input name="stock" type="number" min="0" value="${typeof p.stock === 'number' ? p.stock : ''}"></div>
+    </div>
+    <div class="field"><label>Gambar: tempel link imgbb atau kode HTML (boleh banyak, satu per baris)</label>
+      <textarea name="images" data-preview="pPv" placeholder="https://i.ibb.co/... atau &lt;img src=&quot;https://i.ibb.co/...&quot;&gt;">${esc((p.images || []).join('\n'))}</textarea>
+      <div class="pv" id="pPv"></div>${IMG_STEPS}</div>
+    <div class="field"><label>Deskripsi</label><textarea name="description" style="min-height:130px">${esc(p.description || '')}</textarea></div>
+    <div class="field"><label class="check"><input type="checkbox" name="active" ${p.active === false ? '' : 'checked'}> Tampilkan di toko</label></div>
+    <div class="actions"><button class="btn" type="submit">Simpan</button><button class="btn ghost" type="button" data-act="close">Batal</button></div>
+  </form>`);
+  const ta = $('#modal textarea[name=images]'); if (ta) updatePreview(ta);
+}
+async function saveProduct(form) {
+  const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim();
+  const price = parseInt(v('price')); if (!v('name') || isNaN(price) || price < 0) return toast('Nama dan harga wajib diisi.');
+  const raw = v('images'); const images = extractImages(raw);
+  if (raw && !images.length) return toast('Link gambar tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  const stockRaw = v('stock');
+  const data = { name: v('name'), price, category: v('category'), description: (f.get('description') || '').toString().trim(), images,
+    stock: stockRaw === '' ? null : Math.max(0, parseInt(stockRaw) || 0), active: f.get('active') === 'on', updatedAt: Date.now() };
+  try {
+    if (v('id')) await updateDoc(doc(db, 'products', v('id')), data);
+    else await addDoc(collection(db, 'products'), { ...data, createdAt: Date.now(), ratingSum: 0, ratingCount: 0 });
+    closeModal(); toast('Produk disimpan.');
+  } catch (e) { console.error(e); toast('Gagal menyimpan produk.'); }
+}
+function renderAdminOrders() {
+  const box = $('#oList'); if (!box) return;
+  const q = S.ordQ.trim().toLowerCase();
+  const list = S.orders.filter(o => (S.ordFilter === 'Semua' || o.status === S.ordFilter) && (!q || o.code.toLowerCase().includes(q) || (o.customer?.name || '').toLowerCase().includes(q)));
+  box.innerHTML = list.length ? list.map(adminOrderHTML).join('') : '<div class="empty">Belum ada pesanan.</div>';
+}
+function adminOrderHTML(o) {
+  const c = o.customer;
+  const chat = waLink(c.phone, `Halo ${c.name}, terkait pesanan ${o.code} (${o.items.map(i => i.name + ' x' + i.qty).join(', ')}). Status saat ini: ${o.status}.`);
+  return `<details class="order" data-code="${esc(o.code)}" ${S.openOrders.has(o.code) ? 'open' : ''}>
+    <summary><strong>${esc(o.code)}</strong><span>${esc(c.name)}</span>${badge(o.status)}<span>${rupiah(o.subtotal)}</span></summary>
+    <div class="o-body">
+      <div class="cols">
+        <div><h4>Produk</h4>${o.items.map(i => `<div class="oc-item">${imgTag(i.image, i.name, 'thumb')}<div>${esc(i.name)}<div class="muted small">${i.qty} x ${rupiah(i.price)}</div></div></div>`).join('')}<div class="small muted">Subtotal ${rupiah(o.subtotal)} (belum termasuk ongkir)</div></div>
+        <div><h4>Pembeli</h4><div>${esc(c.name)}</div><div>${esc(c.phone)}</div><div class="muted small">Dibuat ${fmtDate(o.createdAt)}</div><div class="muted small">Dikirim ke: ${esc(o.waLabel || o.waNumber || '')}</div></div>
+        <div><h4>Alamat</h4><div class="pre">${esc(fmtAddress(c))}</div></div>
+      </div>
+      <div class="row3" data-ord="${esc(o.code)}">
+        <div class="field"><label>Status</label><select data-f="status">${STATUSES.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div class="field"><label>Nomor resi / info pengiriman</label><input data-f="resi" value="${esc(o.resi || '')}"></div>
+        <div class="field"><label>Catatan untuk pembeli</label><input data-f="note" placeholder="Opsional"></div>
+      </div>
+      <ul class="tl">${(o.history || []).map(h => `<li><strong>${esc(h.status)}</strong>${h.note ? ' - ' + esc(h.note) : ''} <span class="muted">(${esc(h.by || '')}, ${fmtDate(h.at)})</span></li>`).join('')}</ul>
+      <div class="actions"><button class="btn sm" data-act="o-save" data-code="${esc(o.code)}">Simpan perubahan</button>
+        <a class="btn ghost sm" href="${esc(chat)}" target="_blank" rel="noopener">Chat pembeli</a>
+        <button class="linkbtn danger" data-act="o-del" data-code="${esc(o.code)}">Hapus pesanan</button></div>
+    </div></details>`;
+}
+async function renderAdminReviews() {
+  $('#adminBody').innerHTML = '<div class="panel" id="rvAdmin"><p class="muted">Memuat...</p></div>';
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    const pn = id => (S.products.find(p => p.id === id) || {}).name || '(produk dihapus)';
+    $('#rvAdmin').innerHTML = `<h2>Ulasan</h2>` + (list.length ? list.map(r => `<div class="list-row" style="align-items:flex-start"><div class="grow">
+      <div><strong>${esc(r.name)}</strong> <span class="stars">${stars(r.rating)}</span> <span class="muted small">${fmtDate(r.createdAt)}</span></div>
+      <div class="muted small">${esc(pn(r.productId))}</div>${r.comment ? `<div class="pre">${esc(r.comment)}</div>` : ''}
+      ${(r.photos || []).length ? `<div class="rev-photos">${r.photos.map(u => imgTag(u, 'Foto')).join('')}</div>` : ''}</div>
+      <button class="linkbtn danger" data-act="r-del" data-id="${esc(r.id)}" data-pid="${esc(r.productId)}" data-rating="${r.rating}">Hapus</button></div>`).join('') : '<div class="empty">Belum ada ulasan.</div>');
+  } catch (e) { $('#rvAdmin').innerHTML = '<p class="muted">Ulasan tidak dapat dimuat.</p>'; }
+}
+function waRow(w = {}) {
+  return `<div class="wa-row"><input name="waLabel" placeholder="Label, mis. Admin 1" value="${esc(w.label || '')}"><input name="waNumber" type="tel" placeholder="08xxxxxxxxxx" value="${esc(w.number || '')}"><button type="button" class="linkbtn danger" data-act="wa-del">Hapus</button></div>`;
+}
+function renderAdminSettings() {
+  const s = S.settings; const was = s.waNumbers && s.waNumbers.length ? s.waNumbers : [{}];
+  $('#adminBody').innerHTML = `<form class="panel" data-form="settings" style="max-width:680px"><h2>Pengaturan toko</h2>
+    <div class="field"><label>Nama toko</label><input name="storeName" value="${esc(s.storeName)}" required></div>
+    <div class="field"><label>Kalimat pembuka di beranda</label><input name="tagline" value="${esc(s.tagline)}"></div>
+    <div class="field"><label>Catatan di bagian bawah halaman</label><input name="footerNote" value="${esc(s.footerNote || '')}"></div>
+    <h3 style="margin-top:20px">Pencarian Google (SEO)</h3>
+    <div class="field"><label>Deskripsi singkat toko (sekitar 150 karakter)</label><textarea name="seoDescription" style="min-height:70px">${esc(s.seoDescription || '')}</textarea></div>
+    <div class="field"><label>Kata kunci, pisahkan dengan koma</label><textarea name="seoKeywords" style="min-height:70px">${esc(s.seoKeywords || '')}</textarea></div>
+    <h3 style="margin-top:20px">Nomor WhatsApp tujuan pesanan</h3>
+    <p class="muted small">Boleh lebih dari satu. Jika ada lebih dari satu nomor, pembeli memilih admin tujuan saat memesan. Gunakan format 08xxxx atau 628xxxx.</p>
+    <div id="waRows">${was.map(waRow).join('')}</div>
+    <button type="button" class="btn ghost sm" data-act="wa-add">Tambah nomor</button>
+    <div style="margin-top:20px"><button class="btn" type="submit">Simpan pengaturan</button></div></form>`;
+}
+async function saveSettings(form) {
+  const f = new FormData(form);
+  const waNumbers = $$('.wa-row', form).map(r => ({ label: $('[name=waLabel]', r).value.trim(), number: normPhone($('[name=waNumber]', r).value) })).filter(w => w.number);
+  if (waNumbers.some(w => w.number.length < 10 || w.number.length > 15)) return toast('Ada nomor WhatsApp yang tidak valid.');
+  try {
+    await setDoc(doc(db, 'settings', 'store'), { storeName: f.get('storeName').toString().trim() || 'BeliDulu', tagline: f.get('tagline').toString().trim(), footerNote: f.get('footerNote').toString().trim(), seoDescription: f.get('seoDescription').toString().trim(), seoKeywords: f.get('seoKeywords').toString().trim(), waNumbers }, { merge: true });
+    toast('Pengaturan disimpan.');
+  } catch (e) { toast('Gagal menyimpan pengaturan.'); }
+}
+
+/* ====== Pratinjau gambar otomatis ====== */
+function updatePreview(ta) {
+  const box = document.getElementById(ta.dataset.preview); if (!box) return;
+  const urls = extractImages(ta.value);
+  if (!ta.value.trim()) { box.innerHTML = ''; return; }
+  box.innerHTML = urls.length ? `<span>${urls.length} gambar terdeteksi:</span>` + urls.map(u => `<img src="${esc(u)}" alt="" onerror="this.style.opacity=.3">`).join('')
+    : '<span>Belum ada link gambar yang valid. Gunakan Direct link atau kode HTML dari imgbb.</span>';
+}
+
+/* ====== Event delegation ====== */
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.matches('[data-preview]')) updatePreview(t);
+  else if (t.id === 'q') { S.search = t.value; renderGrid(); }
+  else if (t.id === 'qty') syncQty();
+  else if (t.id === 'oq') { S.ordQ = t.value; renderAdminOrders(); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'of') { S.ordFilter = e.target.value; renderAdminOrders(); } });
+document.addEventListener('toggle', e => { const d = e.target; if (d.matches && d.matches('details.order')) { d.open ? S.openOrders.add(d.dataset.code) : S.openOrders.delete(d.dataset.code); } }, true);
+$('#modal').addEventListener('mousedown', e => { if (e.target.id === 'modal') closeModal(); });
+
+document.addEventListener('submit', async e => {
+  const form = e.target; const kind = form.dataset && form.dataset.form; if (!kind) return;
+  e.preventDefault();
+  if (kind === 'review') submitReview(form);
+  else if (kind === 'checkout') submitCheckout(form);
+  else if (kind === 'lookup') lookupOrder(form);
+  else if (kind === 'product') saveProduct(form);
+  else if (kind === 'settings') saveSettings(form);
+  else if (kind === 'login') {
+    if (new FormData(form).get('pw') === ADMIN_PASSWORD) { S.admin = true; sessionStorage.setItem('bd_admin', '1'); viewAdmin(); }
+    else toast('Kata sandi salah.');
+  }
+});
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act; const code = el.dataset.code;
+  if (act === 'cat') { S.cat = el.dataset.v; renderGrid(); }
+  else if (act === 'thumb') { const m = $('.gal .main img'); m.src = el.dataset.src; $$('.thumbs button').forEach(b => b.classList.toggle('on', b === el)); }
+  else if (act === 'rate') { const n = +el.dataset.v; $$('#rIn button').forEach((b, i) => $('.star', b).classList.toggle('on', i < n)); $('input[name=rating]').value = n; }
+  else if (act === 'qty') { const i = $('#qty'); i.value = Math.max(1, (parseInt(i.value) || 1) + (+el.dataset.d)); syncQty(); }
+  else if (act === 'close') closeModal();
+  else if (act === 'refresh') { try { await loadMyOrder(code); renderMyList(); toast('Pesanan diperbarui.'); } catch (x) { toast('Gagal memperbarui.'); } }
+  else if (act === 'refresh-all') { await Promise.all(getMyCodes().map(c => loadMyOrder(c).catch(() => null))); renderMyList(); toast('Semua pesanan diperbarui.'); }
+  else if (act === 'cancel') {
+    const o = S.my[code]; if (!o) return;
+    const fresh = await loadMyOrder(code);
+    if (!fresh || !CANCELABLE.includes(fresh.status)) { renderMyList(); return toast('Pesanan sudah tidak dapat dibatalkan karena sedang dikirim atau selesai.'); }
+    if (!confirm('Batalkan pesanan ' + code + '?')) return;
+    try { await changeStatus(fresh, 'Dibatalkan', { note: 'Dibatalkan oleh pembeli', by: 'pembeli' }); await loadMyOrder(code); renderMyList(); toast('Pesanan dibatalkan. Anda dapat memberi tahu admin lewat tombol Hubungi admin.'); } catch (x) { toast('Gagal membatalkan pesanan.'); }
+  }
+  else if (act === 'arrived') {
+    const o = S.my[code]; if (!o) return;
+    try { await changeStatus(o, 'Sampai', { note: 'Pembeli mengonfirmasi pesanan sudah sampai', by: 'pembeli' }); await loadMyOrder(code); renderMyList(); toast('Terima kasih. Mohon kabari admin lewat tombol Kabari admin.'); } catch (x) { toast('Gagal memperbarui status.'); }
+  }
+  else if (act === 'tab') { S.tab = el.dataset.tab; $$('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab)); renderAdminTab(); }
+  else if (act === 'logout') { S.admin = false; sessionStorage.removeItem('bd_admin'); if (S.unsubOrders) { S.unsubOrders(); S.unsubOrders = null; } viewAdmin(); }
+  else if (act === 'p-new') productForm();
+  else if (act === 'p-edit') productForm(S.products.find(p => p.id === el.dataset.id));
+  else if (act === 'p-del') {
+    const p = S.products.find(x => x.id === el.dataset.id); if (!p || !confirm(`Hapus produk "${p.name}" beserta ulasannya?`)) return;
+    try {
+      const rs = await getDocs(query(collection(db, 'reviews'), where('productId', '==', p.id)));
+      await Promise.all(rs.docs.map(d => deleteDoc(d.ref))); await deleteDoc(doc(db, 'products', p.id)); toast('Produk dihapus.');
+    } catch (x) { toast('Gagal menghapus produk.'); }
+  }
+  else if (act === 'r-del') {
+    if (!confirm('Hapus ulasan ini?')) return;
+    try { await deleteDoc(doc(db, 'reviews', el.dataset.id)); try { await updateDoc(doc(db, 'products', el.dataset.pid), { ratingSum: increment(-(+el.dataset.rating)), ratingCount: increment(-1) }); } catch (x) {} toast('Ulasan dihapus.'); renderAdminReviews(); } catch (x) { toast('Gagal menghapus ulasan.'); }
+  }
+  else if (act === 'o-save') {
+    const o = S.orders.find(x => x.code === code); const row = $(`[data-ord="${CSS.escape(code)}"]`); if (!o || !row) return;
+    const status = $('[data-f=status]', row).value, resi = $('[data-f=resi]', row).value.trim(), note = $('[data-f=note]', row).value.trim();
+    try { await changeStatus(o, status, { note, resi, by: 'admin' }); toast('Pesanan diperbarui.'); } catch (x) { toast('Gagal menyimpan.'); }
+  }
+  else if (act === 'o-del') { if (!confirm('Hapus pesanan ' + code + ' secara permanen?')) return; try { await deleteDoc(doc(db, 'orders', code)); S.openOrders.delete(code); toast('Pesanan dihapus.'); } catch (x) { toast('Gagal menghapus.'); } }
+  else if (act === 'wa-add') { $('#waRows').insertAdjacentHTML('beforeend', waRow()); }
+  else if (act === 'wa-del') { const rows = $$('.wa-row'); if (rows.length > 1) el.closest('.wa-row').remove(); else $$('input', el.closest('.wa-row')).forEach(i => i.value = ''); }
+});
+
+applySettings();
+route();
+</script>
+</body>
+</html>
