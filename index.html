@@ -218,6 +218,15 @@ body.dark-mode{--bg:#111827;--surface:#1f2937;--ink:#f3f4f6;--muted:#aab6c6;--li
 body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#111827;color:#f3f4f6;border-color:#374151}
 body.dark-mode .qty button{background:#1f2937;color:#c5dcfa}
 @media(max-width:640px){.toolbar .sortbox{max-width:none;width:100%}}
+.mobile-nav-toggle{display:none}
+@media(max-width:640px){
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative}
+  .mobile-nav-toggle{display:inline-flex;align-items:center;justify-content:center;min-width:42px;min-height:40px}
+  header.top nav{display:none;position:absolute;z-index:40;top:calc(100% + 8px);left:14px;right:14px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.12);flex-direction:column;align-items:stretch;gap:4px}
+  header.top nav.mobile-open{display:flex}
+  header.top nav a[data-nav],header.top nav #acct,header.top nav button{display:flex;align-items:center;padding:10px 8px;border-bottom:0}
+  header.top nav #acct a{padding:0}
+}
 </style>
 </head>
 <body>
@@ -227,7 +236,8 @@ body.dark-mode .qty button{background:#1f2937;color:#c5dcfa}
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#/"><img src="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png" alt="Logo BeliDulu"><span id="brand">BeliDulu</span></a>
-    <nav>
+    <button class="btn ghost mobile-nav-toggle" type="button" data-act="mobile-nav" aria-label="Buka menu navigasi" aria-expanded="false">☰ Menu</button>
+    <nav id="mainNav">
       <a href="#/" data-nav="">Produk</a>
       <a href="#/favorit" data-nav="favorit">Favorit</a>
       <a href="#/keranjang" data-nav="keranjang">Keranjang <span id="cartCount"></span></a>
@@ -869,13 +879,13 @@ async function saveProduct(form) {
     stock: stockRaw === '' ? null : Math.max(0, parseInt(stockRaw) || 0), active: f.get('active') === 'on', updatedAt: Date.now() };
   try {
     if (v('id')) {
-      if (ctx === 'seller') { const cur = S.products.find(x => x.id === v('id')); if (!cur || cur.sellerId !== S.user?.uid) return toast('Anda hanya dapat mengubah produk milik sendiri.'); }
+      if (ctx === 'seller') { if (S.profile?.accountDisabled || !packageIsActive(S.profile)) return toast('Akun atau paket penjual sedang tidak aktif.'); const cur = S.products.find(x => x.id === v('id')); if (!cur || cur.sellerId !== S.user?.uid) return toast('Anda hanya dapat mengubah produk milik sendiri.'); }
       await updateDoc(doc(db, 'products', v('id')), data);
     } else {
       const extra = { createdAt: Date.now(), ratingSum: 0, ratingCount: 0 };
       if (ctx === 'seller') {
-        if (!S.user || !S.profile?.isSeller) return toast('Aktifkan paket penjual terlebih dahulu.');
-        if (S.profile.subscriptionExpiresAt && S.profile.subscriptionExpiresAt < Date.now()) return toast('Masa paket penjual sudah berakhir. Perpanjang melalui Profil.');
+        if (!S.user || !S.profile?.isSeller || S.profile?.accountDisabled) return toast(S.profile?.accountDisabled ? 'Akun penjual dinonaktifkan oleh pengelola.' : 'Aktifkan paket penjual terlebih dahulu.');
+        if (!packageIsActive(S.profile) || (S.profile.subscriptionExpiresAt && S.profile.subscriptionExpiresAt < Date.now())) return toast('Masa paket penjual tidak aktif. Perpanjang melalui Profil.');
         if (S.profile.planStatus === 'pending') return toast('Paket penjual menunggu verifikasi pembayaran melalui WhatsApp developer.');
         if (S.profile.planStatus === 'expired' || (S.profile.sellerPlan === 'trial' && S.profile.trialStartedAt && Date.now()-S.profile.trialStartedAt >= 7*86400000)) return toast('Masa Free Trial berakhir. Pilih paket berbayar melalui Profil.');
         Object.assign(extra, { sellerId: S.user.uid, sellerName: S.profile.storeName || S.profile.name || 'Penjual', approved: !S.settings.sellerApproval });
@@ -884,7 +894,7 @@ async function saveProduct(form) {
       if (ctx === 'seller' && S.settings.sellerApproval) toast('Produk disimpan dan menunggu persetujuan pengelola.');
     }
     closeModal(); if (!(ctx === 'seller' && S.settings.sellerApproval)) toast('Produk disimpan.');
-  } catch (e) { console.error(e); toast('Gagal menyimpan produk.'); }
+  } catch (e) { console.error('saveProduct error:', e); toast('Gagal menyimpan produk' + (e?.code ? ' (' + e.code + ')' : '') + '. Periksa koneksi dan aturan Firestore.'); }
 }
 async function deleteProduct(id) {
   const p = S.products.find(x => x.id === id); if (!p) return;
@@ -896,6 +906,32 @@ async function deleteProduct(id) {
     await Promise.all(rs.docs.map(d => deleteDoc(d.ref))); await deleteDoc(doc(db, 'products', p.id)); toast('Produk dihapus.');
   } catch (x) { toast('Gagal menghapus produk.'); }
 }
+
+function formatCountdown(expiresAt) {
+  const ms = Number(expiresAt || 0) - Date.now();
+  if (!expiresAt || ms <= 0) return 'Masa paket telah berakhir';
+  const total = Math.floor(ms / 1000), days = Math.floor(total / 86400), hours = Math.floor((total % 86400) / 3600), mins = Math.floor((total % 3600) / 60), secs = total % 60;
+  return `${days} hari ${hours} jam ${mins} menit ${secs} detik`;
+}
+function packageIsActive(pr = S.profile) {
+  if (!pr || pr.accountDisabled || !pr.isSeller) return false;
+  if (!pr.subscriptionExpiresAt) return pr.planStatus === 'active';
+  return Number(pr.subscriptionExpiresAt) > Date.now() && ['active','trial'].includes(pr.planStatus);
+}
+function packageNeedsRenewal(pr = S.profile) {
+  const end = Number(pr?.subscriptionExpiresAt || 0);
+  return !packageIsActive(pr) || end - Date.now() <= 3 * 86400000;
+}
+let countdownTicker = null;
+function startCountdownTicker() {
+  if (countdownTicker) clearInterval(countdownTicker);
+  countdownTicker = setInterval(() => {
+    const el = document.querySelector('[data-package-countdown]');
+    if (el) el.textContent = formatCountdown(Number(el.dataset.packageCountdown));
+    document.querySelectorAll('[data-admin-countdown]').forEach(n => n.textContent = formatCountdown(Number(n.dataset.adminCountdown)));
+  }, 1000);
+}
+startCountdownTicker();
 
 /* ====== Dashboard penjual (#/jual) ====== */
 function viewSeller() {
@@ -909,13 +945,13 @@ function viewSeller() {
     return;
   }
   const planExpired = S.profile?.subscriptionExpiresAt && S.profile.subscriptionExpiresAt < Date.now();
-  const isSeller = !!S.profile?.isSeller && !planExpired;
+  const isSeller = !!S.profile?.isSeller && !S.profile?.accountDisabled && !planExpired;
   if (planExpired) { S.profile.isSeller = false; S.profile.planStatus = 'expired'; }
   if (!isSeller) S.stab = 'profile'; else startSellerOrders();
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
   <div class="actions" style="justify-content:space-between;margin:0 0 6px"><h1 style="margin:0">${isSeller ? 'Toko saya' : 'Akun saya'}</h1><button class="linkbtn" data-act="gl-logout">Keluar</button></div>
   <p class="muted small" style="margin-bottom:16px">Masuk sebagai ${esc(S.user.email || S.user.displayName || '')}</p>
-  ${isSeller ? `<div class="note">Paket: <strong>${esc(S.profile?.sellerPlanLabel || 'Free Trial 7 hari')}</strong> · Status: <strong>${esc(S.profile?.planStatus || 'trial')}</strong>${S.profile?.planStatus==='pending' ? ' · Menunggu verifikasi pembayaran.' : ''}${S.profile?.planStatus==='expired' ? ' · Masa trial berakhir, pilih paket berbayar di Profil.' : ''}</div><div class="tabs">
+  ${S.profile?.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Anda tidak dapat menambahkan atau menjual produk sampai akun diaktifkan kembali.</div>' : ''}${isSeller ? `<div class="note">Paket: <strong>${esc(S.profile?.sellerPlanLabel || 'Free Trial 7 hari')}</strong> · Status: <strong>${esc(S.profile?.planStatus || 'trial')}</strong><div class="small">Sisa waktu: <strong data-package-countdown="${Number(S.profile?.subscriptionExpiresAt)||0}">${esc(formatCountdown(S.profile?.subscriptionExpiresAt))}</strong></div>${S.profile?.planStatus==='pending' ? ' · Menunggu verifikasi pembayaran.' : ''}</div><div class="tabs">
     <button data-act="stab" data-stab="products" class="${S.stab === 'products' ? 'on' : ''}">Produk saya</button>
     <button data-act="stab" data-stab="orders" data-stab-label class="${S.stab === 'orders' ? 'on' : ''}">${tabLabel(S.sellerOrders)}</button>
     <button data-act="stab" data-stab="profile" class="${S.stab === 'profile' ? 'on' : ''}">Profil</button></div>` : ''}
@@ -938,14 +974,14 @@ function renderSellerTab() {
       <div style="margin-bottom:14px">${avatarHTML(pr.photo || S.user.photoURL, pr.name || S.user.displayName, 'lg')}</div>
       <div class="field"><label>Nama tampilan</label><input name="name" value="${esc(pr.name || S.user.displayName || '')}" required></div>
       <div class="field"><label>Foto profil: tempel link imgbb atau kode HTML</label>${imgPicker('photo', pr.photo ? [pr.photo] : [], { single: true })}${IMG_STEPS}</div>
-      <div class="field"><label class="check"><input type="checkbox" name="isSeller" ${isSeller ? 'checked' : ''}> Saya ingin berjualan di ${esc(S.settings.storeName)}</label></div>
-      <div id="sellerFields" class="${isSeller ? '' : 'hide'}">
-        <h3>Pilih paket penjual</h3><div class="plan-grid">
-          <label class="plan-card"><input type="radio" name="sellerPlan" value="trial" ${(!pr.sellerPlan || pr.sellerPlan==='trial') ? 'checked' : ''}><strong>Free Trial</strong><div class="plan-price">Gratis</div><span class="seller-plan-note">7 hari</span></label>
+      ${pr.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Pilihan paket dikunci sampai pengelola mengaktifkan kembali akun.</div>' : `<div class="field"><label class="check"><input type="checkbox" name="isSeller" ${isSeller ? 'checked' : ''}> Saya ingin berjualan di ${esc(S.settings.storeName)}</label></div>`}
+      <div id="sellerFields" class="${isSeller || (!pr.accountDisabled && (pr.planStatus==='pending' || pr.planStatus==='expired')) ? '' : 'hide'}">
+        ${packageIsActive(pr) && !packageNeedsRenewal(pr) ? `<div class="note"><strong>Paket ${esc(pr.sellerPlanLabel || pr.sellerPlan || 'penjual')} aktif.</strong><br>Sisa waktu: <strong data-package-countdown="${Number(pr.subscriptionExpiresAt)||0}">${esc(formatCountdown(pr.subscriptionExpiresAt))}</strong><p class="seller-plan-note">Pilihan paket disembunyikan selama masa aktif. Menu perpanjangan muncul saat masa paket tersisa 3 hari atau kurang.</p></div><input type="hidden" name="sellerPlan" value="${esc(pr.sellerPlan || 'trial')}">` : `<h3>${packageIsActive(pr) ? 'Perpanjang paket penjual' : 'Pilih paket penjual'}</h3><div class="plan-grid">
+          <label class="plan-card"><input type="radio" name="sellerPlan" value="trial" ${(!pr.sellerPlan || pr.sellerPlan==='trial') ? 'checked' : ''}><strong>Free Trial</strong><div class="plan-price">Gratis</div><span class="seller-plan-note">7 hari (sekali)</span></label>
           <label class="plan-card"><input type="radio" name="sellerPlan" value="weekly" ${pr.sellerPlan==='weekly' ? 'checked' : ''}><strong>Mingguan</strong><div class="plan-price">Rp10.000</div><span class="seller-plan-note">7 hari</span></label>
           <label class="plan-card"><input type="radio" name="sellerPlan" value="monthly" ${pr.sellerPlan==='monthly' ? 'checked' : ''}><strong>Bulanan</strong><div class="plan-price">Rp50.000</div><span class="seller-plan-note">30 hari</span></label>
           <label class="plan-card"><input type="radio" name="sellerPlan" value="yearly" ${pr.sellerPlan==='yearly' ? 'checked' : ''}><strong>Tahunan</strong><div class="plan-price">Rp400.000</div><span class="seller-plan-note">365 hari</span></label>
-        </div><p class="seller-plan-note">Paket berbayar diproses melalui WhatsApp developer. Status paket tidak aktif otomatis sebelum pembayaran diverifikasi.</p>
+        </div><p class="seller-plan-note">Paket berbayar diproses melalui WhatsApp developer. Paket baru aktif setelah pengelola memverifikasi pembayaran.</p>`}
         <div class="field"><label class="req">Nama toko</label><input name="storeName" value="${esc(pr.storeName || '')}"></div>
         <div class="field"><label class="req">Nomor WhatsApp penjual (pesanan dikirim ke sini)</label><input name="wa" type="tel" placeholder="08xxxxxxxxxx" value="${esc(pr.wa || '')}"></div>
         <div class="field"><label>Tentang toko</label><textarea name="bio" maxlength="300">${esc(pr.bio || '')}</textarea></div>
@@ -961,7 +997,7 @@ function renderSellerOrders() {
 async function saveProfile(form) {
   const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim();
   const ip = $('.ip', form); if (ipInvalid(ip)) return toast('Link foto profil tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
-  const isSeller = f.get('isSeller') === 'on';
+  const isSeller = S.profile?.accountDisabled ? false : (f.get('isSeller') === 'on');
   const wa = normPhone(v('wa'));
   if (isSeller) {
     if (!v('storeName')) return toast('Nama toko wajib diisi.');
@@ -972,10 +1008,11 @@ async function saveProfile(form) {
   const was = !!S.profile?.isSeller;
   const trialStartedAt = plan === 'trial' ? (S.profile?.trialStartedAt || Date.now()) : (S.profile?.trialStartedAt || null);
   const trialActive = plan === 'trial' && Date.now() - trialStartedAt < 7 * 86400000;
-  const paidAlreadyActive = S.profile?.sellerPlan === plan && S.profile?.planStatus === 'active' && (!S.profile?.subscriptionExpiresAt || S.profile.subscriptionExpiresAt > Date.now());
-  const planStatus = plan === 'trial' ? (trialActive ? 'trial' : 'expired') : (paidAlreadyActive ? 'active' : 'pending');
-  const sellerActive = isSeller && (trialActive || paidAlreadyActive || (was && !S.profile?.sellerPlan));
-  const data = { name: v('name'), photo: ipValues(ip)[0] || '', isSeller: sellerActive, storeName: v('storeName'), wa: isSeller ? wa : (S.profile?.wa || ''), bio: v('bio'), sellerPlan: plan, sellerPlanLabel: planMeta.label, sellerPlanPrice: planMeta.price, sellerPlanDays: planMeta.days, trialStartedAt, subscriptionExpiresAt: plan === 'trial' ? trialStartedAt + 7*86400000 : (paidAlreadyActive ? (S.profile?.subscriptionExpiresAt || null) : null), planStatus, updatedAt: Date.now() };
+  const paidAlreadyActive = S.profile?.sellerPlan === plan && S.profile?.planStatus === 'active' && (!S.profile?.subscriptionExpiresAt || S.profile.subscriptionExpiresAt > Date.now()) && !packageNeedsRenewal(S.profile);
+  const activeUnchanged = packageIsActive(S.profile) && plan === (S.profile?.sellerPlan || 'trial') && !packageNeedsRenewal(S.profile);
+  const planStatus = activeUnchanged ? (S.profile?.planStatus || 'active') : (plan === 'trial' ? (trialActive ? 'trial' : 'expired') : (paidAlreadyActive ? 'active' : 'pending'));
+  const sellerActive = !S.profile?.accountDisabled && isSeller && (activeUnchanged || trialActive || paidAlreadyActive || (was && !S.profile?.sellerPlan));
+  const data = { email: S.user.email || '', name: v('name'), photo: ipValues(ip)[0] || '', isSeller: sellerActive, storeName: v('storeName'), wa: isSeller ? wa : (S.profile?.wa || ''), bio: v('bio'), sellerPlan: plan, sellerPlanLabel: planMeta.label, sellerPlanPrice: planMeta.price, sellerPlanDays: planMeta.days, trialStartedAt, subscriptionExpiresAt: activeUnchanged ? S.profile.subscriptionExpiresAt : (plan === 'trial' ? trialStartedAt + 7*86400000 : (paidAlreadyActive ? (S.profile?.subscriptionExpiresAt || null) : null)), accountDisabled: !!S.profile?.accountDisabled, planStatus, updatedAt: Date.now() };
   try {
     await setDoc(doc(db, 'users', S.user.uid), data, { merge: true });
     S.profile = { ...(S.profile || {}), ...data }; delete S.users[S.user.uid];
@@ -1068,13 +1105,25 @@ function adminOrderHTML(o, canDelete) {
 }
 async function renderAdminSellers() {
   const box = $('#adminBody');
-  box.innerHTML = '<div class="panel"><h2>Paket penjual</h2><p class="muted">Aktifkan paket setelah pembayaran diverifikasi. Ini tidak memakai Firebase Authentication admin.</p><div id="sellerPlanRows">Memuat data penjual...</div></div>';
+  box.innerHTML = '<div class="panel"><h2>Pengelolaan akun penjual</h2><p class="muted">Cari nama, email, atau UID. Pengaktifan paket dilakukan setelah pembayaran diverifikasi.</p><div class="field"><label for="sellerSearch">Cari penjual / ID akun</label><input id="sellerSearch" placeholder="Nama toko, email, atau UID..."></div><div id="sellerPlanRows">Memuat data penjual...</div></div>';
   try {
     const snap = await getDocs(collection(db, 'users'));
-    const users = snap.docs.map(d => ({uid:d.id, ...d.data()})).filter(u => u.sellerPlan || u.isSeller).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const users = snap.docs.map(d => ({uid:d.id, ...d.data()})).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     const rows = $('#sellerPlanRows'); if (!rows) return;
-    rows.innerHTML = users.length ? users.map(u => `<div class="list-row"><div class="grow"><strong>${esc(u.storeName || u.name || 'Toko tanpa nama')}</strong><div class="muted small">UID: ${esc(u.uid)} · Paket: ${esc(u.sellerPlanLabel || u.sellerPlan || 'Lama')} · ${esc(u.planStatus || 'aktif lama')} · ${u.subscriptionExpiresAt ? 'Berakhir '+fmtDate(u.subscriptionExpiresAt) : 'Belum ada tanggal berakhir'}</div></div>${u.planStatus==='pending' || u.planStatus==='expired' || !u.isSeller || (u.subscriptionExpiresAt && u.subscriptionExpiresAt < Date.now()) ? `<button class="btn sm" data-act="seller-activate" data-id="${esc(u.uid)}" data-days="${Number(u.sellerPlanDays)||7}">Aktifkan / Perpanjang</button>` : '<span class="badge done">Aktif</span>'}</div>`).join('') : '<p class="empty">Belum ada akun penjual.</p>';
-  } catch (e) { const rows=$('#sellerPlanRows'); if(rows) rows.innerHTML='<p class="muted">Data penjual tidak dapat dimuat. Periksa aturan Firestore.</p>'; }
+    const paint = (queryText='') => {
+      if (!$('#sellerPlanRows')) return;
+      const q = queryText.trim().toLowerCase();
+      const matched = users.filter(u => !q || [u.uid,u.email,u.name,u.storeName,u.sellerPlanLabel,u.sellerPlan].some(v => String(v||'').toLowerCase().includes(q)));
+      rows.innerHTML = matched.length ? matched.map(u => {
+        const expires = Number(u.subscriptionExpiresAt || 0), active = !u.accountDisabled && !!u.isSeller && expires > Date.now() && ['active','trial'].includes(u.planStatus);
+        const status = u.accountDisabled ? 'DINONAKTIFKAN' : (active ? 'AKTIF' : (u.planStatus || 'belum aktif'));
+        const countdown = expires ? `<div class="small">Sisa waktu: <strong data-admin-countdown="${expires}">${esc(formatCountdown(expires))}</strong></div>` : '<div class="small muted">Belum ada masa aktif tercatat</div>';
+        return `<div class="list-row"><div class="grow"><strong>${esc(u.storeName || u.name || u.email || 'Toko tanpa nama')}</strong><div class="muted small">Email: ${esc(u.email || 'tidak tersedia')} · UID: ${esc(u.uid)}</div><div class="muted small">Paket: ${esc(u.sellerPlanLabel || u.sellerPlan || 'Belum memilih')} · Status: <strong>${status}</strong>${expires ? ' · Berakhir '+fmtDate(expires) : ''}</div>${countdown}</div><div class="actions">${(!active || u.planStatus==='pending' || expires-Date.now()<=3*86400000) && !u.accountDisabled ? `<button class="btn sm" data-act="seller-activate" data-id="${esc(u.uid)}" data-days="${Number(u.sellerPlanDays)||7}">Aktifkan / Perpanjang</button>` : ''}${u.accountDisabled ? `<button class="btn ghost sm" data-act="seller-enable" data-id="${esc(u.uid)}">Buka blokir</button>` : `<button class="btn ghost sm" data-act="seller-disable" data-id="${esc(u.uid)}">Nonaktifkan akun</button>`}</div></div>`;
+      }).join('') : '<p class="empty">Tidak ada akun yang cocok dengan pencarian.</p>';
+    };
+    paint();
+    const search = $('#sellerSearch'); if (search) search.addEventListener('input', () => paint(search.value));
+  } catch (e) { console.error(e); const rows=$('#sellerPlanRows'); if(rows) rows.innerHTML='<p class="muted">Data penjual tidak dapat dimuat. Periksa aturan Firestore.</p>'; }
 }
 
 async function renderAdminReviews() {
@@ -1170,6 +1219,8 @@ function shareProduct(id) {
 }
 
 /* ====== Event delegation ====== */
+document.addEventListener('click', e => { if (e.target.closest('nav a[data-nav]')) { $('#mainNav')?.classList.remove('mobile-open'); const b=$('.mobile-nav-toggle'); if(b){b.setAttribute('aria-expanded','false');b.textContent='☰ Menu';} } });
+
 document.addEventListener('input', e => {
   const t = e.target; const ip = t.closest && t.closest('.ip');
   if (ip) updateIp(ip);
@@ -1203,7 +1254,11 @@ document.addEventListener('submit', async e => {
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act; const code = el.dataset.code;
+  if (el.matches('nav a[data-nav]')) { $('#mainNav')?.classList.remove('mobile-open'); const mt=$('.mobile-nav-toggle'); if(mt){mt.setAttribute('aria-expanded','false');mt.textContent='☰ Menu';} }
   if (act === 'reload') location.reload();
+  else if (act === 'mobile-nav') { const nav=$('#mainNav'); const open=nav.classList.toggle('mobile-open'); el.setAttribute('aria-expanded', String(open)); el.textContent=open ? '✕ Tutup' : '☰ Menu'; }
+  else if (act === 'seller-disable') { const uid=el.dataset.id; if(!confirm('Nonaktifkan akun penjual ini? Akun tidak dapat menambahkan atau menjual produk.')) return; try { await updateDoc(doc(db,'users',uid),{accountDisabled:true,isSeller:false,planStatus:'disabled',updatedAt:Date.now()}); const ps=await getDocs(query(collection(db,'products'),where('sellerId','==',uid))); await Promise.all(ps.docs.map(d=>updateDoc(d.ref,{active:false,approved:false,disabledByAdmin:true,updatedAt:Date.now()}))); if(S.user?.uid===uid){S.profile={...(S.profile||{}),accountDisabled:true,isSeller:false,planStatus:'disabled'}; viewSeller();} toast('Akun penjual dinonaktifkan.'); renderAdminSellers(); } catch(err) { console.error(err); toast('Gagal menonaktifkan akun. Periksa aturan Firestore.'); } }
+  else if (act === 'seller-enable') { const uid=el.dataset.id; try { await updateDoc(doc(db,'users',uid),{accountDisabled:false,isSeller:false,planStatus:'expired',updatedAt:Date.now()}); toast('Blokir akun dibuka. Aktifkan paket untuk mengizinkan penjualan kembali.'); renderAdminSellers(); } catch(err) { console.error(err); toast('Gagal membuka blokir akun.'); } }
   else if (act === 'theme') { const dark = !document.body.classList.contains('dark-mode'); document.body.classList.toggle('dark-mode', dark); localStorage.setItem('bd_theme', dark ? 'dark' : 'light'); }
   else if (act === 'share-product') shareProduct(el.dataset.id);
   else if (act === 'ask-seller') askSeller(el.dataset.id);
@@ -1246,7 +1301,7 @@ document.addEventListener('click', async e => {
   }
   else if (act === 'tab') { S.tab = el.dataset.tab; $$('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab)); renderAdminTab(); }
   else if (act === 'logout') { S.admin = false; sessionStorage.removeItem('bd_admin'); if (S.unsubOrders) { S.unsubOrders(); S.unsubOrders = null; } viewAdmin(); }
-  else if (act === 'seller-activate') { const uid=el.dataset.id; const days=Math.max(1,Math.min(366,parseInt(el.dataset.days)||7)); try { const snap=await getDoc(doc(db,'users',uid)); if(!snap.exists()) return toast('Akun penjual tidak ditemukan.'); const u=snap.data(); await updateDoc(doc(db,'users',uid), {isSeller:true, planStatus:'active', subscriptionStartedAt:Date.now(), subscriptionExpiresAt:Date.now()+days*86400000, updatedAt:Date.now()}); if(S.user?.uid===uid){S.profile={...u,isSeller:true,planStatus:'active',subscriptionStartedAt:Date.now(),subscriptionExpiresAt:Date.now()+days*86400000};} toast('Paket penjual berhasil diaktifkan.'); renderAdminSellers(); } catch(e) { console.error(e); toast('Gagal mengaktifkan paket.'); } }
+  else if (act === 'seller-activate') { const uid=el.dataset.id; const days=Math.max(1,Math.min(366,parseInt(el.dataset.days)||7)); try { const snap=await getDoc(doc(db,'users',uid)); if(!snap.exists()) return toast('Akun penjual tidak ditemukan.'); const u=snap.data(); if(u.accountDisabled) return toast('Buka blokir akun terlebih dahulu.'); const now=Date.now(), oldEnd=Number(u.subscriptionExpiresAt||0), extendFrom=Math.max(now,oldEnd), expires=extendFrom+days*86400000; await updateDoc(doc(db,'users',uid), {isSeller:true, accountDisabled:false, planStatus:'active', subscriptionStartedAt:now, subscriptionExpiresAt:expires, updatedAt:now}); if(S.user?.uid===uid){S.profile={...u,isSeller:true,accountDisabled:false,planStatus:'active',subscriptionStartedAt:now,subscriptionExpiresAt:expires};} toast('Paket penjual berhasil diaktifkan / diperpanjang.'); renderAdminSellers(); } catch(e) { console.error(e); toast('Gagal mengaktifkan paket. Periksa aturan Firestore.'); } }
   else if (act === 'p-new') productForm(null, 'admin');
   else if (act === 'p-edit') productForm(S.products.find(p => p.id === el.dataset.id), 'admin');
   else if (act === 'p-del') deleteProduct(el.dataset.id);
