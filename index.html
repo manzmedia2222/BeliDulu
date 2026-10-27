@@ -11,7 +11,7 @@
 <meta name="author" content="BeliDulu">
 <link rel="icon" type="image/png" href="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
 <link rel="apple-touch-icon" href="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png">
-<link rel="manifest" href="./manifest.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="BeliDulu">
 <meta property="og:locale" content="id_ID">
@@ -233,15 +233,15 @@ details.order summary::-webkit-details-marker{display:none}
 </div>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#/"><img src="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png" alt="Logo BeliDulu"><span id="brand">BeliDulu</span></a>
+    <a class="brand" href="/"><img src="https://i.ibb.co.com/1GGKXCbd/0275d262-a6ec-4283-8ac7-e29d95304771.png" alt="Logo BeliDulu"><span id="brand">BeliDulu</span></a>
     <button class="btn ghost mobile-nav-toggle" type="button" data-act="mobile-nav" aria-label="Buka menu navigasi" aria-expanded="false">☰ Menu</button>
     <nav id="mainNav">
-      <a href="#/" data-nav="">Produk</a>
-      <a href="#/favorit" data-nav="favorit">Favorit</a>
-      <a href="#/keranjang" data-nav="keranjang">Keranjang <span id="cartCount"></span></a>
-      <a href="#/pesanan" data-nav="pesanan">Pesanan saya</a>
-      <a href="#/jual" data-nav="jual">Jual</a>
-      <a href="#/tentang" data-nav="tentang">About me</a>
+      <a href="/" data-nav="">Produk</a>
+      <a href="/favorit" data-nav="favorit">Favorit</a>
+      <a href="/keranjang" data-nav="keranjang">Keranjang <span id="cartCount"></span></a>
+      <a href="/pesanan" data-nav="pesanan">Pesanan saya</a>
+      <a href="/jual" data-nav="jual">Jual</a>
+      <a href="/tentang" data-nav="tentang">About me</a>
       <span id="acct"></span>
     </nav>
   </div>
@@ -276,7 +276,7 @@ const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 
 /* ====== Pengaturan dasar ====== */
-const APP_BUILD = 2026102703;             // naikkan angka ini setiap kali file website diperbarui
+const APP_BUILD = 2026102704;             // naikkan angka ini setiap kali file website diperbarui
 const ADMIN_PASSWORD = "BeliDuluajaya";   // ubah di sini jika ingin mengganti kata sandi pengelola
 const STATUSES = ['Menunggu konfirmasi','Diproses','Dikirim','Sampai','Selesai','Dibatalkan'];
 const CANCELABLE = ['Menunggu konfirmasi','Diproses'];
@@ -376,12 +376,13 @@ const getCart = () => { try { return JSON.parse(localStorage.getItem('bd_cart') 
 const saveCart = list => localStorage.setItem('bd_cart', JSON.stringify(list));
 const addCart = id => { const list=getCart(); const found=list.find(x=>x.id===id); if(found) found.qty=Math.min(99,(found.qty||1)+1); else list.push({id,qty:1}); saveCart(list); toast('Produk ditambahkan ke keranjang.'); };
 function renderCartCount(){const el=$('#cartCount');if(el){const n=getCart().reduce((a,x)=>a+(+x.qty||1),0);el.textContent=n?`(${n})`:'';}}
-function viewCart(){const list=getCart().map(x=>({...x,product:S.products.find(p=>p.id===x.id)})).filter(x=>x.product&&visible(x.product));const total=list.reduce((a,x)=>a+(Number(x.product.discountPrice&&x.product.discountPrice<x.product.price?x.product.discountPrice:x.product.price)||0)*(+x.qty||1),0);app.innerHTML=`<div class="backrow"><a class="btn ghost sm" href="#/">Kembali belanja</a></div><h1>Keranjang</h1><p class="muted">Total sementara: <strong>${rupiah(total)}</strong></p><div class="panel">${list.length?list.map(x=>`<div class="list-row">${imgTag((x.product.images||[])[0],x.product.name,'thumb')}<div class="grow"><strong>${esc(x.product.name)}</strong><div class="muted small">${rupiah(x.product.discountPrice&&x.product.discountPrice<x.product.price?x.product.discountPrice:x.product.price)} × ${x.qty||1}</div><a href="#/beli/${esc(x.product.id)}">Checkout produk ini</a></div><button class="linkbtn danger" data-act="cart-remove" data-id="${esc(x.id)}">Hapus</button></div>`).join(''):'<div class="empty">Keranjang masih kosong. <a href="#/">Cari produk</a></div>'}</div>${list.length?'<p class="small muted" style="margin-top:12px">Checkout saat ini dilakukan per produk, jadi pesanan gabungan beberapa produk belum didukung.</p><button class="btn ghost" data-act="cart-clear">Kosongkan keranjang</button>':''}`;}
+function viewCart(){const list=getCart().map(x=>({...x,product:S.products.find(p=>p.id===x.id)})).filter(x=>x.product&&visible(x.product));const total=list.reduce((a,x)=>a+(Number(x.product.discountPrice&&x.product.discountPrice<x.product.price?x.product.discountPrice:x.product.price)||0)*(+x.qty||1),0);app.innerHTML=`<div class="backrow"><a class="btn ghost sm" href="/">Kembali belanja</a></div><h1>Keranjang</h1><p class="muted">Total sementara: <strong>${rupiah(total)}</strong></p><div class="panel">${list.length?list.map(x=>`<div class="list-row">${imgTag((x.product.images||[])[0],x.product.name,'thumb')}<div class="grow"><strong>${esc(x.product.name)}</strong><div class="muted small">${rupiah(x.product.discountPrice&&x.product.discountPrice<x.product.price?x.product.discountPrice:x.product.price)} × ${x.qty||1}</div><a href="/beli/${esc(x.product.id)}">Checkout produk ini</a></div><button class="linkbtn danger" data-act="cart-remove" data-id="${esc(x.id)}">Hapus</button></div>`).join(''):'<div class="empty">Keranjang masih kosong. <a href="/">Cari produk</a></div>'}</div>${list.length?'<p class="small muted" style="margin-top:12px">Checkout saat ini dilakukan per produk, jadi pesanan gabungan beberapa produk belum didukung.</p><button class="btn ghost" data-act="cart-clear">Kosongkan keranjang</button>':''}`;}
 const getMyCodes = () => { try { return JSON.parse(localStorage.getItem('bd_orders') || '[]'); } catch (e) { return []; } };
 const addMyCode = c => { const l = getMyCodes(); if (!l.includes(c)) { l.unshift(c); localStorage.setItem('bd_orders', JSON.stringify(l.slice(0, 50))); } };
 const app = $('#app');
-/* Halaman pengelola dibuka lewat alamat #/belidulu (tidak ada tautannya di beranda) */
-const currentPage = () => { const p = (location.hash || '#/').slice(2).split('/')[0]; return p === 'belidulu' ? 'admin' : (p === 'admin' ? '' : p); };
+/* Halaman pengelola dibuka lewat alamat /belidulu (tidak ada tautannya di beranda) */
+const pathParts = () => location.pathname.split('/').filter(Boolean);
+const currentPage = () => { const p = pathParts()[0] || ''; return p === 'belidulu' ? 'admin' : (p === 'admin' ? '' : p); };
 
 /* ====== Favorit ====== */
 const getWish = () => { try { return JSON.parse(localStorage.getItem('bd_wish') || '[]'); } catch (e) { return []; } };
@@ -418,7 +419,7 @@ function renderAccount() {
   const el = $('#acct');
   if (!S.user) { el.innerHTML = ''; return; }
   const nm = S.profile?.name || S.user.displayName || 'U';
-  el.innerHTML = `<a href="#/jual" title="${esc(nm)}" aria-label="Akun saya">${avatarHTML(S.profile?.photo || S.user.photoURL, nm)}</a>`;
+  el.innerHTML = `<a href="/jual" title="${esc(nm)}" aria-label="Akun saya">${avatarHTML(S.profile?.photo || S.user.photoURL, nm)}</a>`;
 }
 onAuthStateChanged(auth, async u => {
   S.user = u; S.profile = null;
@@ -504,7 +505,7 @@ const tabLabel = list => { const n = list.filter(o => o.status === 'Menunggu kon
 
 /* ====== Router ====== */
 function route() {
-  const parts = (location.hash || '#/').slice(2).split('/');
+  const parts = pathParts();
   const page = currentPage(); const arg = decodeURIComponent(parts[1] || '');
   if (page !== 'toko' && S.unsubStore) { S.unsubStore(); S.unsubStore = null; S.storeUid = null; }
   window.scrollTo(0, 0); closeModal();
@@ -525,7 +526,7 @@ function route() {
 /* ====== About me ====== */
 function viewAbout() {
   document.title = 'About me - ' + (S.settings.storeName || 'BeliDulu');
-  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a></div>
   <section class="panel" style="max-width:720px;margin:0 auto">
     <h1>Selamat datang di BeliDulu! 🚀</h1>
     <p>BeliDulu adalah platform toko online siap pakai yang dirancang khusus untuk membantu para pelaku usaha, reseller, dan dropshipper memulai bisnis online mereka tanpa perlu pusing memikirkan teknis pembuatan website.</p>
@@ -542,7 +543,18 @@ function viewAbout() {
     <p class="muted small" style="margin-top:8px">(Klik untuk chat langsung)</p>
   </section>`;
 }
-window.addEventListener('hashchange', route);
+/* Navigasi berbasis path (/produk/abc) tanpa reload halaman */
+if (location.hash.startsWith('#/')) history.replaceState(null, '', location.hash.slice(1)); /* alamat lama #/produk/abc tetap jalan */
+window.addEventListener('popstate', route);
+document.addEventListener('click', e => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target.closest('a[href]'); if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+  const h = a.getAttribute('href');
+  if (!h || h[0] !== '/' || h[1] === '/') return;
+  e.preventDefault();
+  if (h !== location.pathname) history.pushState(null, '', h);
+  route();
+});
 const errBanner = () => S.err ? `<div class="banner">${esc(S.err)}</div>` : '';
 const loadingHTML = '<div class="empty">Memuat...</div>';
 
@@ -573,23 +585,23 @@ function cardHTML(p) {
   const out = typeof p.stock === 'number' && p.stock <= 0;
   const avg = avgOf(p); const on = getWish().includes(p.id);
   return `<article class="card">
-    <div class="imw"><a class="im" href="#/produk/${esc(p.id)}">${imgTag((p.images || [])[0], p.name)}</a>
+    <div class="imw"><a class="im" href="/produk/${esc(p.id)}">${imgTag((p.images || [])[0], p.name)}</a>
       <button class="wish${on ? ' on' : ''}" data-act="wish" data-id="${esc(p.id)}" aria-pressed="${on}" aria-label="Simpan ke favorit">${heart}</button></div>
     <div class="bd">
-      <a class="nm" href="#/produk/${esc(p.id)}">${esc(p.name)}</a>
-      ${p.sellerName ? `<div class="small muted">oleh <a href="#/toko/${esc(p.sellerId || '')}">${esc(p.sellerName)}</a></div>` : ''}
+      <a class="nm" href="/produk/${esc(p.id)}">${esc(p.name)}</a>
+      ${p.sellerName ? `<div class="small muted">oleh <a href="/toko/${esc(p.sellerId || '')}">${esc(p.sellerName)}</a></div>` : ''}
       <div class="rate">${p.ratingCount ? `<span class="stars">${stars(avg)}</span><span>${avg.toFixed(1)} (${p.ratingCount})</span>` : ''}</div>
       <div>${p.discountPrice && Number(p.discountPrice)<Number(p.price) ? `<span class="discount-tag">Diskon ${Math.round((1-Number(p.discountPrice)/Number(p.price))*100)}%</span><div><span class="price-old">${rupiah(p.price)}</span><span class="price">${rupiah(p.discountPrice)}</span></div>` : `<div class="price">${rupiah(p.price)}</div>`}</div>
       <div class="price-note">(belum termasuk ongkir)</div>
       <div class="sp"></div>
-      ${out ? `<button class="btn ghost block" data-act="stock-alert" data-id="${esc(p.id)}">Ingatkan saat tersedia</button>` : `<div class="actions"><button class="btn ghost sm" data-act="add-cart" data-id="${esc(p.id)}">+ Keranjang</button><a class="btn block" href="#/beli/${esc(p.id)}">${p.preorder ? 'Preorder' : 'Beli'}</a></div>`}<div class="feature-actions"><button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan</button><button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan produk</button>${p.sellerId ? `<button class="btn ghost" data-act="report-seller" data-id="${esc(p.sellerId)}">Laporkan akun</button>` : ''}</div>
+      ${out ? `<button class="btn ghost block" data-act="stock-alert" data-id="${esc(p.id)}">Ingatkan saat tersedia</button>` : `<div class="actions"><button class="btn ghost sm" data-act="add-cart" data-id="${esc(p.id)}">+ Keranjang</button><a class="btn block" href="/beli/${esc(p.id)}">${p.preorder ? 'Preorder' : 'Beli'}</a></div>`}<div class="feature-actions"><button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan</button><button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan produk</button>${p.sellerId ? `<button class="btn ghost" data-act="report-seller" data-id="${esc(p.sellerId)}">Laporkan akun</button>` : ''}</div>
     </div></article>`;
 }
 
 /* ====== Favorit ====== */
 function viewWish() {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
-  app.innerHTML = `${errBanner()}<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div><h1>Favorit</h1>
+  app.innerHTML = `${errBanner()}<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a></div><h1>Favorit</h1>
   <p class="muted">${S.user ? 'Favorit tersimpan di akun Google Anda.' : 'Favorit tersimpan di perangkat ini. Masuk dengan Google lewat menu Jual agar tersimpan di akun.'}</p>
   <div class="grid" id="wGrid"></div>`;
   renderWishPage();
@@ -597,7 +609,7 @@ function viewWish() {
 function renderWishPage() {
   const g = $('#wGrid'); if (!g) return;
   const list = getWish().map(id => S.products.find(p => p.id === id)).filter(p => p && visible(p));
-  g.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty" style="grid-column:1/-1">Belum ada produk favorit.<br><a href="#/">Lihat produk</a></div>';
+  g.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty" style="grid-column:1/-1">Belum ada produk favorit.<br><a href="/">Lihat produk</a></div>';
 }
 
 async function viewStorefront(uid) {
@@ -627,14 +639,14 @@ function renderStorefrontContent(uid, seller) {
     const product = S.products.find(p => p.sellerId === uid);
     if (product) seller = {storeName:product.sellerName || 'Toko penjual'};
   }
-  if (!seller) { app.innerHTML = '<div class="empty">Akun toko tidak ditemukan.<br><a href="#/">Kembali ke beranda</a></div>'; return; }
+  if (!seller) { app.innerHTML = '<div class="empty">Akun toko tidak ditemukan.<br><a href="/">Kembali ke beranda</a></div>'; return; }
   const mine = S.products.filter(p => p.sellerId === uid && visible(p));
   const name = seller.storeName || seller.name || mine[0]?.sellerName || 'Toko penjual';
   const followers = Array.isArray(seller.followers) ? seller.followers : [];
   const following = !!S.user && followers.includes(S.user.uid);
   const logo = seller.storeLogo || seller.photo || '';
   const wa = seller.wa || '';
-  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a></div>
   <section class="panel">
     <div class="store-head">${logo ? imgTag(logo, 'Logo '+name, 'store-logo') : `<div class="store-logo" style="display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;color:var(--primary-d)">${esc(name.trim().charAt(0).toUpperCase() || 'T')}</div>`}
       <div style="flex:1;min-width:180px"><h1>${esc(name)}</h1><p class="muted small">Profil toko di BeliDulu</p>${seller.bio ? `<p style="white-space:pre-wrap">${esc(seller.bio)}</p>` : '<p class="muted">Belum ada deskripsi toko.</p>'}</div>
@@ -654,11 +666,11 @@ function renderStorefrontContent(uid, seller) {
 function viewProduct(id) {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
   const p = S.products.find(x => x.id === id);
-  if (!p || !visible(p)) { app.innerHTML = `${errBanner()}<div class="empty">Produk tidak ditemukan.<br><a href="#/">Kembali ke beranda</a></div>`; return; }
+  if (!p || !visible(p)) { app.innerHTML = `${errBanner()}<div class="empty">Produk tidak ditemukan.<br><a href="/">Kembali ke beranda</a></div>`; return; }
   document.title = p.name + ' - ' + (S.settings.storeName || '');
   const imgs = p.images || []; const out = typeof p.stock === 'number' && p.stock <= 0; const avg = avgOf(p); const on = getWish().includes(p.id);
   const sellerProfile = p.sellerId ? (S.users[p.sellerId] || {}) : {};
-  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a><span class="crumb"><a href="#/">Produk</a> / ${esc(p.name)}</span></div>
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a><span class="crumb"><a href="/">Produk</a> / ${esc(p.name)}</span></div>
   <div class="detail">
     <div class="gal"><div class="main">${imgTag(imgs[0], p.name)}</div>
       ${imgs.length > 1 ? `<div class="thumbs">${imgs.map((u, i) => `<button class="${i ? '' : 'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Gambar ${i + 1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : ''}
@@ -670,9 +682,9 @@ function viewProduct(id) {
       <div class="price-note" style="margin-bottom:14px">(belum termasuk ongkir)</div>
       ${p.category ? `<p class="small muted">Kategori: ${esc(p.category)}</p>` : ''}
       ${typeof p.stock === 'number' ? `<p class="small muted">Stok: ${p.stock > 0 ? p.stock : 'habis'}</p>` : ''}
-      ${p.sellerId ? `<a class="seller seller-link" href="#/toko/${esc(p.sellerId)}">${sellerProfile.storeLogo ? imgTag(sellerProfile.storeLogo,'Logo toko','store-logo') : avatarHTML('',p.sellerName || 'T','lg')}<span><strong>${esc(sellerProfile.storeName || p.sellerName || 'Toko penjual')}</strong><span class="muted small" style="display:block">Lihat profil toko</span></span></a>` : ''}
+      ${p.sellerId ? `<a class="seller seller-link" href="/toko/${esc(p.sellerId)}">${sellerProfile.storeLogo ? imgTag(sellerProfile.storeLogo,'Logo toko','store-logo') : avatarHTML('',p.sellerName || 'T','lg')}<span><strong>${esc(sellerProfile.storeName || p.sellerName || 'Toko penjual')}</strong><span class="muted small" style="display:block">Lihat profil toko</span></span></a>` : ''}
       <div class="actions" style="margin-top:0">
-        ${out ? '<span class="btn off">Stok habis</span>' : `<a class="btn" href="#/beli/${esc(p.id)}">Beli</a>`}
+        ${out ? '<span class="btn off">Stok habis</span>' : `<a class="btn" href="/beli/${esc(p.id)}">Beli</a>`}
         <button class="btn ghost wishbtn${on ? ' on' : ''}" data-act="wish" data-id="${esc(p.id)}" aria-pressed="${on}">${wishLabel(on)}</button>
         <button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan produk</button>
         <button class="btn ghost" data-act="ask-seller" data-id="${esc(p.id)}">Tanya penjual</button>
@@ -706,7 +718,7 @@ function viewProduct(id) {
 async function fillSellerBox(p) {
   if (!p.sellerId) return;
   const u = await getUser(p.sellerId); const box = $('#sellerBox'); if (!box || !u) return;
-  box.innerHTML = `<a class="seller seller-link" href="#/toko/${encodeURIComponent(p.sellerId)}" aria-label="Lihat toko ${esc(u.storeName || u.name || 'Penjual')}">${avatarHTML(u.photo, u.storeName || u.name)}<div><div class="small muted">Dijual oleh</div><strong>${esc(u.storeName || u.name || 'Penjual')}</strong><div class="small">Lihat toko dan semua produk penjual →</div></div></a>${u.bio ? `<p class="small muted">${esc(u.bio)}</p>` : ''}`;
+  box.innerHTML = `<a class="seller seller-link" href="/toko/${encodeURIComponent(p.sellerId)}" aria-label="Lihat toko ${esc(u.storeName || u.name || 'Penjual')}">${avatarHTML(u.photo, u.storeName || u.name)}<div><div class="small muted">Dijual oleh</div><strong>${esc(u.storeName || u.name || 'Penjual')}</strong><div class="small">Lihat toko dan semua produk penjual →</div></div></a>${u.bio ? `<p class="small muted">${esc(u.bio)}</p>` : ''}`;
 }
 async function loadReviews(pid) {
   const box = $('#revList'); if (!box) return;
@@ -743,15 +755,15 @@ async function submitReview(form) {
 function viewCheckout(id) {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
   const p = S.products.find(x => x.id === id);
-  if (!p || !visible(p)) { app.innerHTML = '<div class="empty">Produk tidak ditemukan.<br><a href="#/">Kembali ke beranda</a></div>'; return; }
-  if (typeof p.stock === 'number' && p.stock <= 0) { app.innerHTML = '<div class="empty">Maaf, stok produk ini habis.<br><a href="#/">Kembali ke beranda</a></div>'; return; }
+  if (!p || !visible(p)) { app.innerHTML = '<div class="empty">Produk tidak ditemukan.<br><a href="/">Kembali ke beranda</a></div>'; return; }
+  if (typeof p.stock === 'number' && p.stock <= 0) { app.innerHTML = '<div class="empty">Maaf, stok produk ini habis.<br><a href="/">Kembali ke beranda</a></div>'; return; }
   S.cur = p; S.curSeller = null; document.title = 'Beli ' + p.name;
   const was = S.settings.waNumbers || [];
   let waField;
   if (p.sellerId) waField = '<div class="note" id="waField">Memuat data penjual...</div>';
   else if (was.length > 1) waField = `<div class="field"><label>Kirim pesanan ke</label><select name="wa">${was.map((w, i) => `<option value="${i}">${esc(w.label || 'Admin ' + (i + 1))}</option>`).join('')}</select></div>`;
   else waField = '<input type="hidden" name="wa" value="0">';
-  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a><a class="btn ghost sm" href="#/produk/${esc(p.id)}">Kembali ke produk</a></div>
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a><a class="btn ghost sm" href="/produk/${esc(p.id)}">Kembali ke produk</a></div>
   ${!p.sellerId && !was.length ? '<div class="banner">Nomor WhatsApp admin belum diatur, sehingga pesanan belum dapat dikirim.</div>' : ''}
   <div class="co">
     <form class="panel" data-form="checkout" autocomplete="on">
@@ -845,7 +857,7 @@ async function submitCheckout(form) {
     <h2>Pesanan tersimpan</h2>
     <p>Kode pesanan Anda: <strong>${esc(code)}</strong></p>
     <p class="muted">Langkah terakhir: kirim rincian pesanan ke WhatsApp agar segera diproses dan ongkir dikonfirmasi. Jika WhatsApp tidak terbuka otomatis, tekan tombol di bawah.</p>
-    <div class="actions"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Kirim ke WhatsApp</a><a class="btn ghost" href="#/pesanan">Lihat pesanan saya</a><a class="btn ghost" href="#/">Kembali ke beranda</a></div>
+    <div class="actions"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Kirim ke WhatsApp</a><a class="btn ghost" href="/pesanan">Lihat pesanan saya</a><a class="btn ghost" href="/">Kembali ke beranda</a></div>
     <p class="muted small" style="margin-top:14px">Simpan kode pesanan dan nomor telepon Anda untuk memeriksa status pesanan.</p></div>`;
   window.scrollTo(0, 0); window.open(url, '_blank');
 }
@@ -1011,14 +1023,14 @@ function viewSeller() {
       <h1>Jual di ${esc(S.settings.storeName)}</h1>
       <p class="muted">Siapa saja bisa menjadi penjual. Masuk dengan akun Google, lengkapi profil toko, lalu tambahkan produk dengan cara upload yang sama seperti biasa (foto lewat link imgbb).</p>
       <p class="muted small">Pembeli tidak perlu akun. Login Google hanya untuk penjual dan untuk menyimpan favorit di akun.</p>
-      <div class="actions"><button class="btn" data-act="gl-login">Masuk dengan Google</button><a class="btn ghost" href="#/">Kembali ke beranda</a></div></div>`;
+      <div class="actions"><button class="btn" data-act="gl-login">Masuk dengan Google</button><a class="btn ghost" href="/">Kembali ke beranda</a></div></div>`;
     return;
   }
   const planExpired = S.profile?.subscriptionExpiresAt && S.profile.subscriptionExpiresAt < Date.now();
   const isSeller = !!S.profile?.isSeller && !S.profile?.accountDisabled && !planExpired;
   if (planExpired) { S.profile.isSeller = false; S.profile.planStatus = 'expired'; }
   if (!isSeller) S.stab = 'profile'; else startSellerOrders();
-  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a></div>
   <div class="actions" style="justify-content:space-between;margin:0 0 6px"><h1 style="margin:0">${isSeller ? 'Toko saya' : 'Akun saya'}</h1><button class="linkbtn" data-act="gl-logout">Keluar</button></div>
   <p class="muted small" style="margin-bottom:16px">Masuk sebagai ${esc(S.user.email || S.user.displayName || '')}</p>
   ${S.profile?.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Anda tidak dapat menambahkan atau menjual produk sampai akun diaktifkan kembali.</div>' : ''}${Number(S.profile?.subscriptionExpiresAt||0)-Date.now() > 0 && Number(S.profile?.subscriptionExpiresAt||0)-Date.now() <= 7*86400000 ? `<div class="note warn"><strong>Pemberitahuan: paket hampir habis.</strong> Sisa masa aktif kurang dari 7 hari. Hubungi admin untuk memperpanjang sekarang. <a class="btn sm" target="_blank" rel="noopener" href="${esc(waLink(S.settings.developerWhatsApp || '082254388144', `Halo admin BeliDulu, saya ingin memperpanjang paket ${S.profile?.sellerPlanLabel || S.profile?.sellerPlan || 'penjual'}. Nama toko: ${S.profile?.storeName || S.profile?.name || '-'}; UID: ${S.user.uid}; berakhir: ${fmtDate(S.profile?.subscriptionExpiresAt)}.`))}">Hubungi admin</a></div>` : ''}${isSeller ? `<div class="note">Paket: <strong>${esc(S.profile?.sellerPlanLabel || 'Free Trial 7 hari')}</strong> · Status: <strong>${esc(S.profile?.planStatus || 'trial')}</strong><div class="small">Sisa waktu: <strong data-package-countdown="${Number(S.profile?.subscriptionExpiresAt)||0}">${esc(formatCountdown(S.profile?.subscriptionExpiresAt))}</strong></div>${S.profile?.planStatus==='pending' ? ' · Menunggu verifikasi pembayaran.' : ''}</div><div class="tabs">
@@ -1063,7 +1075,7 @@ function renderSellerTab() {
         <div class="field"><label>Logo brand toko: tempel link gambar atau kode HTML dari imgbb</label>${imgPicker('storeLogo', pr.storeLogo ? [pr.storeLogo] : [], { single: true })}${IMG_STEPS}</div>
         <div class="field"><label class="req">Nomor WhatsApp penjual (pesanan dikirim ke sini)</label><input name="wa" type="tel" placeholder="08xxxxxxxxxx" value="${esc(pr.wa || '')}"></div>
         <div class="field"><label>Deskripsi toko</label><textarea name="bio" maxlength="500" placeholder="Ceritakan toko dan produk yang dijual">${esc(pr.bio || '')}</textarea></div>
-         ${pr.storeName ? `<div class="note">URL profil toko dapat dibagikan di bio media sosial: <a href="#/toko/${esc(S.user.uid)}">Lihat profil toko</a><div class="actions"><button type="button" class="btn ghost sm" data-act="copy-store-url" data-id="${esc(S.user.uid)}">Salin URL profil</button></div></div>` : ''}
+         ${pr.storeName ? `<div class="note">URL profil toko dapat dibagikan di bio media sosial: <a href="/toko/${esc(S.user.uid)}">Lihat profil toko</a><div class="actions"><button type="button" class="btn ghost sm" data-act="copy-store-url" data-id="${esc(S.user.uid)}">Salin URL profil</button></div></div>` : ''}
       </div>
       <button class="btn" type="submit">Simpan profil</button></form>`;
     initIps(b);
@@ -1076,13 +1088,13 @@ function renderSellerOrders() {
 
 async function copyStoreUrl(uid) {
   if (!uid) return;
-  const url = location.origin + location.pathname + '#/toko/' + encodeURIComponent(uid);
+  const url = location.origin + '/toko/' + encodeURIComponent(uid);
   try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(url); toast('URL profil toko disalin.'); }
     else { const t=document.createElement('textarea'); t.value=url; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) toast('URL profil toko disalin.'); else prompt('Salin URL profil toko:',url); }
   } catch(e) { prompt('Salin URL profil toko:',url); }
 }
 function shareStore(uid) {
-  const url = location.origin + location.pathname + '#/toko/' + encodeURIComponent(uid);
+  const url = location.origin + '/toko/' + encodeURIComponent(uid);
   const seller = S.users[uid] || {};
   const title = seller.storeName || seller.name || 'Toko BeliDulu';
   if (navigator.share) navigator.share({title, text:'Lihat toko '+title+' di BeliDulu', url}).catch(()=>{});
@@ -1107,7 +1119,7 @@ async function toggleFollow(uid) {
 
 async function copyProductUrl(id) {
   const p = S.products.find(x => x.id === id); if (!p) return toast('Produk tidak ditemukan.');
-  const url = location.origin + location.pathname + '#/produk/' + encodeURIComponent(id);
+  const url = location.origin + '/produk/' + encodeURIComponent(id);
   try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(url); toast('URL produk disalin.'); }
     else { const t=document.createElement('textarea'); t.value=url; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) toast('URL produk disalin.'); else prompt('Salin URL produk:',url); }
   } catch(e) { prompt('Salin URL produk:',url); }
@@ -1366,7 +1378,7 @@ function subscribeStock(id) {
   addDoc(collection(db, 'stockAlerts'), {productId:id, productName:p.name, phone, createdAt:Date.now(), notified:false}).then(()=>toast('Pengingat stok disimpan.')).catch(()=>toast('Pengingat gagal disimpan.'));
 }
 function shareProduct(id) {
-  const url = location.origin + location.pathname + '#/produk/' + encodeURIComponent(id);
+  const url = location.origin + '/produk/' + encodeURIComponent(id);
   if (navigator.share) navigator.share({title:(S.products.find(p=>p.id===id)?.name || 'Produk BeliDulu'), url}).catch(()=>{});
   else if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(()=>toast('Link produk disalin.')).catch(()=>prompt('Salin link produk:',url));
   else prompt('Salin link produk:',url);
@@ -1484,7 +1496,7 @@ applySettings();
 renderAccount();
 renderCartCount();
 route();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
 </body>
 </html>
