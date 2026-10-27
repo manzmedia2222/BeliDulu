@@ -204,7 +204,6 @@ details.order summary::-webkit-details-marker{display:none}
 .toolbar{align-items:center}.sort-select{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface);color:var(--ink);font:inherit;max-width:100%}
 .price-old{font-size:12px;color:var(--muted);text-decoration:line-through;margin-right:6px}.discount-tag{display:inline-block;background:#fff0e6;color:#a94c12;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:5px}
 .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:10px 0 16px}.plan-card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}.plan-card strong{display:block}.plan-card .plan-price{font-size:18px;font-weight:600;margin:5px 0}.seller-plan-note{font-size:12px;color:var(--muted)}.similar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}.similar-grid .card{min-width:0}
-body.dark{--bg:#111827;--surface:#1f2937;--ink:#f3f4f6;--muted:#aab5c5;--line:#374151;--soft:#263449;--soft2:#182231;--primary:#8eb7f1;--primary-d:#b7d1f5}
 
 /* Fitur tambahan BeliDulu */
 .toolbar .sortbox{max-width:190px;min-width:150px}
@@ -214,9 +213,6 @@ body.dark{--bg:#111827;--surface:#1f2937;--ink:#f3f4f6;--muted:#aab5c5;--line:#3
 .discount-tag{display:inline-block;background:#e7f4ec;color:#236343;border-radius:4px;padding:2px 6px;font-size:11px;margin-left:6px}
 .feature-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .feature-actions .btn{font-size:13px;padding:7px 10px}
-body.dark-mode{--bg:#111827;--surface:#1f2937;--ink:#f3f4f6;--muted:#aab6c6;--line:#374151;--primary:#91b7e6;--primary-d:#c5dcfa;--soft:#27364a;--soft2:#172131;color:var(--ink)}
-body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#111827;color:#f3f4f6;border-color:#374151}
-body.dark-mode .qty button{background:#1f2937;color:#c5dcfa}
 @media(max-width:640px){.toolbar .sortbox{max-width:none;width:100%}}
 .mobile-nav-toggle{display:none}
 @media(max-width:640px){
@@ -243,7 +239,7 @@ body.dark-mode .qty button{background:#1f2937;color:#c5dcfa}
       <a href="#/keranjang" data-nav="keranjang">Keranjang <span id="cartCount"></span></a>
       <a href="#/pesanan" data-nav="pesanan">Pesanan saya</a>
       <a href="#/jual" data-nav="jual">Jual</a>
-      <button class="btn ghost sm" type="button" data-act="theme" aria-label="Ganti tema">◐ Tema</button><span id="acct"></span>
+      <span id="acct"></span>
     </nav>
   </div>
 </header>
@@ -425,6 +421,11 @@ onAuthStateChanged(auth, async u => {
   S.user = u; S.profile = null;
   if (u) {
     try { const s = await getDoc(doc(db, 'users', u.uid)); S.profile = s.exists() ? s.data() : null; } catch (e) {}
+    if (S.profile && !S.profile.accountDisabled && Number(S.profile.subscriptionExpiresAt || 0) > 0 && Number(S.profile.subscriptionExpiresAt) <= Date.now() && S.profile.isSeller) {
+      S.profile = {...S.profile, isSeller:false, planStatus:'expired'};
+      updateDoc(doc(db,'users',u.uid), {isSeller:false, planStatus:'expired', updatedAt:Date.now()}).catch(()=>{});
+      getDocs(query(collection(db,'products'), where('sellerId','==',u.uid))).then(ps=>Promise.all(ps.docs.map(d=>updateDoc(d.ref,{active:false, disabledByAdmin:false, disabledByExpiry:true, updatedAt:Date.now()})))).catch(err=>console.warn('Produk kedaluwarsa belum bisa disembunyikan otomatis; periksa aturan Firestore.',err));
+    }
     const merged = [...new Set([...(S.profile?.wishlist || []), ...getWish()])];
     localStorage.setItem('bd_wish', JSON.stringify(merged));
     if (merged.length !== (S.profile?.wishlist || []).length) setDoc(doc(db, 'users', u.uid), { wishlist: merged }, { merge: true }).catch(() => {});
@@ -466,7 +467,6 @@ onSnapshot(doc(db, 'settings', 'app'), snap => {
 }, () => {});
 
 function applySettings() {
-  document.body.classList.toggle('dark-mode', localStorage.getItem('bd_theme') === 'dark');
   const n = S.settings.storeName || 'BeliDulu';
   $('#brand').textContent = n; $('#footName').textContent = n;
   $('#footNote').textContent = S.settings.footerNote || '';
@@ -526,7 +526,7 @@ function viewHome() {
   app.innerHTML = `${errBanner()}
   <section class="intro"><h1>Produk</h1><p>${esc(cleanTagline(S.settings.tagline))}</p></section>
   ${S.settings.promoBanner ? `<div class="promo-banner">${esc(S.settings.promoBanner)}</div>` : ''}
-  <div class="toolbar"><input id="q" type="search" placeholder="Cari produk" aria-label="Cari produk" value="${esc(S.search)}"><select id="sortProducts" class="sort-select" aria-label="Urutkan produk"><option value="new">Terbaru</option><option value="cheap">Harga terendah</option><option value="expensive">Harga tertinggi</option><option value="popular">Terlaris/populer</option><option value="rating">Rating tertinggi</option></select><button class="btn ghost sm" type="button" data-act="dark-toggle">Mode gelap</button><div class="chips" id="cats"></div></div>
+  <div class="toolbar"><input id="q" type="search" placeholder="Cari produk" aria-label="Cari produk" value="${esc(S.search)}"><select id="sortProducts" class="sort-select" aria-label="Urutkan produk"><option value="new">Terbaru</option><option value="cheap">Harga terendah</option><option value="expensive">Harga tertinggi</option><option value="popular">Terlaris/populer</option><option value="rating">Rating tertinggi</option></select><div class="chips" id="cats"></div></div>
   <div class="grid" id="grid"></div>`;
   renderGrid();
 }
@@ -556,7 +556,7 @@ function cardHTML(p) {
       <div>${p.discountPrice && Number(p.discountPrice)<Number(p.price) ? `<span class="discount-tag">Diskon ${Math.round((1-Number(p.discountPrice)/Number(p.price))*100)}%</span><div><span class="price-old">${rupiah(p.price)}</span><span class="price">${rupiah(p.discountPrice)}</span></div>` : `<div class="price">${rupiah(p.price)}</div>`}</div>
       <div class="price-note">(belum termasuk ongkir)</div>
       <div class="sp"></div>
-      ${out ? `<button class="btn ghost block" data-act="stock-alert" data-id="${esc(p.id)}">Ingatkan saat tersedia</button>` : `<div class="actions"><button class="btn ghost sm" data-act="add-cart" data-id="${esc(p.id)}">+ Keranjang</button><a class="btn block" href="#/beli/${esc(p.id)}">${p.preorder ? 'Preorder' : 'Beli'}</a></div>`}<div class="feature-actions"><button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan</button><button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan</button></div>
+      ${out ? `<button class="btn ghost block" data-act="stock-alert" data-id="${esc(p.id)}">Ingatkan saat tersedia</button>` : `<div class="actions"><button class="btn ghost sm" data-act="add-cart" data-id="${esc(p.id)}">+ Keranjang</button><a class="btn block" href="#/beli/${esc(p.id)}">${p.preorder ? 'Preorder' : 'Beli'}</a></div>`}<div class="feature-actions"><button class="btn ghost" data-act="share-product" data-id="${esc(p.id)}">Bagikan</button><button class="btn ghost" data-act="report-product" data-id="${esc(p.id)}">Laporkan produk</button>${p.sellerId ? `<button class="btn ghost" data-act="report-seller" data-id="${esc(p.sellerId)}">Laporkan akun</button>` : ''}</div>
     </div></article>`;
 }
 
@@ -920,7 +920,7 @@ function packageIsActive(pr = S.profile) {
 }
 function packageNeedsRenewal(pr = S.profile) {
   const end = Number(pr?.subscriptionExpiresAt || 0);
-  return !packageIsActive(pr) || end - Date.now() <= 3 * 86400000;
+  return !packageIsActive(pr) || end - Date.now() <= 7 * 86400000;
 }
 let countdownTicker = null;
 function startCountdownTicker() {
@@ -951,7 +951,7 @@ function viewSeller() {
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
   <div class="actions" style="justify-content:space-between;margin:0 0 6px"><h1 style="margin:0">${isSeller ? 'Toko saya' : 'Akun saya'}</h1><button class="linkbtn" data-act="gl-logout">Keluar</button></div>
   <p class="muted small" style="margin-bottom:16px">Masuk sebagai ${esc(S.user.email || S.user.displayName || '')}</p>
-  ${S.profile?.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Anda tidak dapat menambahkan atau menjual produk sampai akun diaktifkan kembali.</div>' : ''}${isSeller ? `<div class="note">Paket: <strong>${esc(S.profile?.sellerPlanLabel || 'Free Trial 7 hari')}</strong> · Status: <strong>${esc(S.profile?.planStatus || 'trial')}</strong><div class="small">Sisa waktu: <strong data-package-countdown="${Number(S.profile?.subscriptionExpiresAt)||0}">${esc(formatCountdown(S.profile?.subscriptionExpiresAt))}</strong></div>${S.profile?.planStatus==='pending' ? ' · Menunggu verifikasi pembayaran.' : ''}</div><div class="tabs">
+  ${S.profile?.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Anda tidak dapat menambahkan atau menjual produk sampai akun diaktifkan kembali.</div>' : ''}${Number(S.profile?.subscriptionExpiresAt||0)-Date.now() > 0 && Number(S.profile?.subscriptionExpiresAt||0)-Date.now() <= 7*86400000 ? `<div class="note warn"><strong>Pemberitahuan: paket hampir habis.</strong> Sisa masa aktif kurang dari 7 hari. Hubungi admin untuk memperpanjang sekarang. <a class="btn sm" target="_blank" rel="noopener" href="${esc(waLink(S.settings.developerWhatsApp || '082254388144', `Halo admin BeliDulu, saya ingin memperpanjang paket ${S.profile?.sellerPlanLabel || S.profile?.sellerPlan || 'penjual'}. Nama toko: ${S.profile?.storeName || S.profile?.name || '-'}; UID: ${S.user.uid}; berakhir: ${fmtDate(S.profile?.subscriptionExpiresAt)}.`))}">Hubungi admin</a></div>` : ''}${isSeller ? `<div class="note">Paket: <strong>${esc(S.profile?.sellerPlanLabel || 'Free Trial 7 hari')}</strong> · Status: <strong>${esc(S.profile?.planStatus || 'trial')}</strong><div class="small">Sisa waktu: <strong data-package-countdown="${Number(S.profile?.subscriptionExpiresAt)||0}">${esc(formatCountdown(S.profile?.subscriptionExpiresAt))}</strong></div>${S.profile?.planStatus==='pending' ? ' · Menunggu verifikasi pembayaran.' : ''}</div><div class="tabs">
     <button data-act="stab" data-stab="products" class="${S.stab === 'products' ? 'on' : ''}">Produk saya</button>
     <button data-act="stab" data-stab="orders" data-stab-label class="${S.stab === 'orders' ? 'on' : ''}">${tabLabel(S.sellerOrders)}</button>
     <button data-act="stab" data-stab="profile" class="${S.stab === 'profile' ? 'on' : ''}">Profil</button></div>` : ''}
@@ -976,7 +976,7 @@ function renderSellerTab() {
       <div class="field"><label>Foto profil: tempel link imgbb atau kode HTML</label>${imgPicker('photo', pr.photo ? [pr.photo] : [], { single: true })}${IMG_STEPS}</div>
       ${pr.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Pilihan paket dikunci sampai pengelola mengaktifkan kembali akun.</div>' : `<div class="field"><label class="check"><input type="checkbox" name="isSeller" ${isSeller ? 'checked' : ''}> Saya ingin berjualan di ${esc(S.settings.storeName)}</label></div>`}
       <div id="sellerFields" class="${isSeller || (!pr.accountDisabled && (pr.planStatus==='pending' || pr.planStatus==='expired')) ? '' : 'hide'}">
-        ${packageIsActive(pr) && !packageNeedsRenewal(pr) ? `<div class="note"><strong>Paket ${esc(pr.sellerPlanLabel || pr.sellerPlan || 'penjual')} aktif.</strong><br>Sisa waktu: <strong data-package-countdown="${Number(pr.subscriptionExpiresAt)||0}">${esc(formatCountdown(pr.subscriptionExpiresAt))}</strong><p class="seller-plan-note">Pilihan paket disembunyikan selama masa aktif. Menu perpanjangan muncul saat masa paket tersisa 3 hari atau kurang.</p></div><input type="hidden" name="sellerPlan" value="${esc(pr.sellerPlan || 'trial')}">` : `<h3>${packageIsActive(pr) ? 'Perpanjang paket penjual' : 'Pilih paket penjual'}</h3><div class="plan-grid">
+        ${packageIsActive(pr) && !packageNeedsRenewal(pr) ? `<div class="note"><strong>Paket ${esc(pr.sellerPlanLabel || pr.sellerPlan || 'penjual')} aktif.</strong><br>Sisa waktu: <strong data-package-countdown="${Number(pr.subscriptionExpiresAt)||0}">${esc(formatCountdown(pr.subscriptionExpiresAt))}</strong><p class="seller-plan-note">Pilihan paket disembunyikan selama masa aktif. Pemberitahuan perpanjangan muncul saat masa paket tersisa 7 hari atau kurang.</p></div><input type="hidden" name="sellerPlan" value="${esc(pr.sellerPlan || 'trial')}">` : `<h3>${packageIsActive(pr) ? 'Perpanjang paket penjual' : 'Pilih paket penjual'}</h3><div class="plan-grid">
           <label class="plan-card"><input type="radio" name="sellerPlan" value="trial" ${(!pr.sellerPlan || pr.sellerPlan==='trial') ? 'checked' : ''}><strong>Free Trial</strong><div class="plan-price">Gratis</div><span class="seller-plan-note">7 hari (sekali)</span></label>
           <label class="plan-card"><input type="radio" name="sellerPlan" value="weekly" ${pr.sellerPlan==='weekly' ? 'checked' : ''}><strong>Mingguan</strong><div class="plan-price">Rp10.000</div><span class="seller-plan-note">7 hari</span></label>
           <label class="plan-card"><input type="radio" name="sellerPlan" value="monthly" ${pr.sellerPlan==='monthly' ? 'checked' : ''}><strong>Bulanan</strong><div class="plan-price">Rp50.000</div><span class="seller-plan-note">30 hari</span></label>
@@ -1118,11 +1118,18 @@ async function renderAdminSellers() {
         const expires = Number(u.subscriptionExpiresAt || 0), active = !u.accountDisabled && !!u.isSeller && expires > Date.now() && ['active','trial'].includes(u.planStatus);
         const status = u.accountDisabled ? 'DINONAKTIFKAN' : (active ? 'AKTIF' : (u.planStatus || 'belum aktif'));
         const countdown = expires ? `<div class="small">Sisa waktu: <strong data-admin-countdown="${expires}">${esc(formatCountdown(expires))}</strong></div>` : '<div class="small muted">Belum ada masa aktif tercatat</div>';
-        return `<div class="list-row"><div class="grow"><strong>${esc(u.storeName || u.name || u.email || 'Toko tanpa nama')}</strong><div class="muted small">Email: ${esc(u.email || 'tidak tersedia')} · UID: ${esc(u.uid)}</div><div class="muted small">Paket: ${esc(u.sellerPlanLabel || u.sellerPlan || 'Belum memilih')} · Status: <strong>${status}</strong>${expires ? ' · Berakhir '+fmtDate(expires) : ''}</div>${countdown}</div><div class="actions">${(!active || u.planStatus==='pending' || expires-Date.now()<=3*86400000) && !u.accountDisabled ? `<button class="btn sm" data-act="seller-activate" data-id="${esc(u.uid)}" data-days="${Number(u.sellerPlanDays)||7}">Aktifkan / Perpanjang</button>` : ''}${u.accountDisabled ? `<button class="btn ghost sm" data-act="seller-enable" data-id="${esc(u.uid)}">Buka blokir</button>` : `<button class="btn ghost sm" data-act="seller-disable" data-id="${esc(u.uid)}">Nonaktifkan akun</button>`}</div></div>`;
+        return `<div class="list-row"><div class="grow"><strong>${esc(u.storeName || u.name || u.email || 'Toko tanpa nama')}</strong><div class="muted small">Email: ${esc(u.email || 'tidak tersedia')} · UID: ${esc(u.uid)}</div><div class="muted small">Paket: ${esc(u.sellerPlanLabel || u.sellerPlan || 'Belum memilih')} · Status: <strong>${status}</strong>${expires ? ' · Berakhir '+fmtDate(expires) : ''}</div>${countdown}</div><div class="actions">${!u.accountDisabled ? `<button class="btn sm" data-act="seller-activate" data-id="${esc(u.uid)}" data-days="${Number(u.sellerPlanDays)||({'weekly':7,'monthly':30,'yearly':365,'trial':7}[u.sellerPlan]||7)}">${active ? 'Perpanjang sekarang' : 'Aktifkan / Perpanjang'}</button>` : ''}${u.accountDisabled ? `<button class="btn ghost sm" data-act="seller-enable" data-id="${esc(u.uid)}">Buka blokir</button>` : `<button class="btn ghost sm" data-act="seller-disable" data-id="${esc(u.uid)}">Nonaktifkan akun</button>`}</div></div>`;
       }).join('') : '<p class="empty">Tidak ada akun yang cocok dengan pencarian.</p>';
     };
     paint();
     const search = $('#sellerSearch'); if (search) search.addEventListener('input', () => paint(search.value));
+    try {
+      const rs = await getDocs(query(collection(db, 'reports'), where('type', '==', 'seller')));
+      const reports = rs.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      const host = document.createElement('section'); host.className='panel'; host.style.marginTop='16px';
+      host.innerHTML = `<h3>Laporan akun penjual (${reports.filter(r=>r.status!=='ditangani').length} belum ditangani)</h3>` + (reports.length ? reports.map(r=>`<div class="list-row"><div class="grow"><strong>UID: ${esc(r.sellerUid||'-')}</strong><div>${esc(r.reason||'')}</div><div class="muted small">Pelapor: ${esc(r.reporterUid||'anonim')} · ${fmtDate(r.createdAt)} · ${esc(r.status||'baru')}</div></div><button class="btn ghost sm" data-act="report-resolve" data-id="${esc(r.id)}">Tandai ditangani</button></div>`).join('') : '<p class="muted">Belum ada laporan akun.</p>');
+      $('#adminBody')?.appendChild(host);
+    } catch (err) { console.warn('Laporan akun tidak dapat dimuat',err); }
   } catch (e) { console.error(e); const rows=$('#sellerPlanRows'); if(rows) rows.innerHTML='<p class="muted">Data penjual tidak dapat dimuat. Periksa aturan Firestore.</p>'; }
 }
 
@@ -1200,6 +1207,13 @@ function reportProduct(id) {
   const reason = prompt('Alasan laporan produk ini:'); if (!reason || !reason.trim()) return;
   addDoc(collection(db, 'reports'), {type:'product', productId:id, productName:p.name, reason:reason.trim(), reporterUid:S.user?.uid || null, createdAt:Date.now(), status:'baru'}).then(()=>toast('Laporan terkirim.')).catch(()=>toast('Laporan gagal dikirim.'));
 }
+function reportSeller(uid) {
+  if (!uid) return;
+  if (S.user?.uid === uid) return toast('Anda tidak dapat melaporkan akun sendiri.');
+  const reason = prompt('Alasan laporan akun penjual ini:');
+  if (!reason || !reason.trim()) return;
+  addDoc(collection(db, 'reports'), {type:'seller', sellerUid:uid, reason:reason.trim(), reporterUid:S.user?.uid || null, createdAt:Date.now(), status:'baru'}).then(()=>toast('Laporan akun terkirim ke pengelola.')).catch(()=>toast('Laporan gagal dikirim. Periksa aturan Firestore.'));
+}
 function askSeller(id) {
   const p = S.products.find(x => x.id === id); if (!p) return;
   const go = u => { const number = p.sellerId ? u?.wa : (S.settings.waNumbers || [])[0]?.number; if (!number) return toast('Nomor WhatsApp penjual belum tersedia.'); window.open(waLink(number, `Halo, saya ingin bertanya tentang produk ${p.name}. Link: ${location.href}`), '_blank'); };
@@ -1259,10 +1273,10 @@ document.addEventListener('click', async e => {
   else if (act === 'mobile-nav') { const nav=$('#mainNav'); const open=nav.classList.toggle('mobile-open'); el.setAttribute('aria-expanded', String(open)); el.textContent=open ? '✕ Tutup' : '☰ Menu'; }
   else if (act === 'seller-disable') { const uid=el.dataset.id; if(!confirm('Nonaktifkan akun penjual ini? Akun tidak dapat menambahkan atau menjual produk.')) return; try { await updateDoc(doc(db,'users',uid),{accountDisabled:true,isSeller:false,planStatus:'disabled',updatedAt:Date.now()}); const ps=await getDocs(query(collection(db,'products'),where('sellerId','==',uid))); await Promise.all(ps.docs.map(d=>updateDoc(d.ref,{active:false,approved:false,disabledByAdmin:true,updatedAt:Date.now()}))); if(S.user?.uid===uid){S.profile={...(S.profile||{}),accountDisabled:true,isSeller:false,planStatus:'disabled'}; viewSeller();} toast('Akun penjual dinonaktifkan.'); renderAdminSellers(); } catch(err) { console.error(err); toast('Gagal menonaktifkan akun. Periksa aturan Firestore.'); } }
   else if (act === 'seller-enable') { const uid=el.dataset.id; try { await updateDoc(doc(db,'users',uid),{accountDisabled:false,isSeller:false,planStatus:'expired',updatedAt:Date.now()}); toast('Blokir akun dibuka. Aktifkan paket untuk mengizinkan penjualan kembali.'); renderAdminSellers(); } catch(err) { console.error(err); toast('Gagal membuka blokir akun.'); } }
-  else if (act === 'theme') { const dark = !document.body.classList.contains('dark-mode'); document.body.classList.toggle('dark-mode', dark); localStorage.setItem('bd_theme', dark ? 'dark' : 'light'); }
   else if (act === 'share-product') shareProduct(el.dataset.id);
   else if (act === 'ask-seller') askSeller(el.dataset.id);
   else if (act === 'report-product') reportProduct(el.dataset.id);
+  else if (act === 'report-seller') reportSeller(el.dataset.id);
   else if (act === 'stock-alert') subscribeStock(el.dataset.id);
   else if (act === 'export-orders') exportCSV([['Kode','Tanggal','Status','Pembeli','Telepon','Produk','Subtotal','Provinsi','Kota','Alamat'], ...S.orders.map(o => [o.code,fmtDate(o.createdAt),o.status,o.customer?.name,o.customer?.phone,(o.items||[]).map(i=>`${i.name} x${i.qty}`).join('; '),o.subtotal,o.customer?.provinsi,o.customer?.kota,fmtAddress(o.customer||{})])], 'belidulu-pesanan.csv');
   else if (act === 'print-orders') window.print();
@@ -1272,7 +1286,6 @@ document.addEventListener('click', async e => {
   else if (act === 'add-cart') { addCart(el.dataset.id); renderCartCount(); }
   else if (act === 'cart-remove') { saveCart(getCart().filter(x=>x.id!==el.dataset.id)); viewCart(); renderCartCount(); }
   else if (act === 'cart-clear') { saveCart([]); viewCart(); renderCartCount(); }
-  else if (act === 'dark-toggle') { const dark = !document.body.classList.contains('dark-mode'); document.body.classList.toggle('dark-mode', dark); localStorage.setItem('bd_theme', dark ? 'dark' : 'light'); }
   else if (act === 'cat') { S.cat = el.dataset.v; renderGrid(); }
   else if (act === 'wish') { e.preventDefault(); toggleWish(el.dataset.id); }
   else if (act === 'thumb') { const m = $('.gal .main img'); m.src = el.dataset.src; $$('.thumbs button').forEach(b => b.classList.toggle('on', b === el)); }
@@ -1301,7 +1314,8 @@ document.addEventListener('click', async e => {
   }
   else if (act === 'tab') { S.tab = el.dataset.tab; $$('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab)); renderAdminTab(); }
   else if (act === 'logout') { S.admin = false; sessionStorage.removeItem('bd_admin'); if (S.unsubOrders) { S.unsubOrders(); S.unsubOrders = null; } viewAdmin(); }
-  else if (act === 'seller-activate') { const uid=el.dataset.id; const days=Math.max(1,Math.min(366,parseInt(el.dataset.days)||7)); try { const snap=await getDoc(doc(db,'users',uid)); if(!snap.exists()) return toast('Akun penjual tidak ditemukan.'); const u=snap.data(); if(u.accountDisabled) return toast('Buka blokir akun terlebih dahulu.'); const now=Date.now(), oldEnd=Number(u.subscriptionExpiresAt||0), extendFrom=Math.max(now,oldEnd), expires=extendFrom+days*86400000; await updateDoc(doc(db,'users',uid), {isSeller:true, accountDisabled:false, planStatus:'active', subscriptionStartedAt:now, subscriptionExpiresAt:expires, updatedAt:now}); if(S.user?.uid===uid){S.profile={...u,isSeller:true,accountDisabled:false,planStatus:'active',subscriptionStartedAt:now,subscriptionExpiresAt:expires};} toast('Paket penjual berhasil diaktifkan / diperpanjang.'); renderAdminSellers(); } catch(e) { console.error(e); toast('Gagal mengaktifkan paket. Periksa aturan Firestore.'); } }
+  else if (act === 'report-resolve') { try { await updateDoc(doc(db,'reports',el.dataset.id),{status:'ditangani',handledAt:Date.now()}); toast('Laporan ditandai sudah ditangani.'); renderAdminSellers(); } catch(e) { toast('Gagal memperbarui laporan. Periksa aturan Firestore.'); } }
+  else if (act === 'seller-activate') { const uid=el.dataset.id; const days=Math.max(1,Math.min(366,parseInt(el.dataset.days)||7)); try { const snap=await getDoc(doc(db,'users',uid)); if(!snap.exists()) return toast('Akun penjual tidak ditemukan.'); const u=snap.data(); if(u.accountDisabled) return toast('Buka blokir akun terlebih dahulu.'); const now=Date.now(), oldEnd=Number(u.subscriptionExpiresAt||0), extendFrom=Math.max(now,oldEnd), planDays=Number(u.sellerPlanDays)||({'weekly':7,'monthly':30,'yearly':365,'trial':7}[u.sellerPlan]||days), expires=extendFrom+planDays*86400000; await updateDoc(doc(db,'users',uid), {isSeller:true, accountDisabled:false, planStatus:'active', sellerPlanDays:planDays, subscriptionStartedAt:now, subscriptionExpiresAt:expires, updatedAt:now}); const ps=await getDocs(query(collection(db,'products'),where('sellerId','==',uid))); await Promise.all(ps.docs.filter(d=>d.data().disabledByExpiry===true && d.data().disabledByAdmin!==true).map(d=>updateDoc(d.ref,{active:true,disabledByExpiry:false,updatedAt:now}))); if(S.user?.uid===uid){S.profile={...u,isSeller:true,accountDisabled:false,planStatus:'active',subscriptionStartedAt:now,subscriptionExpiresAt:expires};} toast('Paket penjual berhasil diaktifkan / diperpanjang.'); renderAdminSellers(); } catch(e) { console.error(e); toast('Gagal mengaktifkan paket. Periksa aturan Firestore.'); } }
   else if (act === 'p-new') productForm(null, 'admin');
   else if (act === 'p-edit') productForm(S.products.find(p => p.id === el.dataset.id), 'admin');
   else if (act === 'p-del') deleteProduct(el.dataset.id);
