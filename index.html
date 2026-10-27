@@ -206,7 +206,8 @@ details.order summary::-webkit-details-marker{display:none}
 /* Fitur tambahan BeliDulu */
 .toolbar{align-items:center}.sort-select{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface);color:var(--ink);font:inherit;max-width:100%}
 .price-old{font-size:12px;color:var(--muted);text-decoration:line-through;margin-right:6px}.discount-tag{display:inline-block;background:#fff0e6;color:#a94c12;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:5px}
-.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:10px 0 16px}.plan-card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}.plan-card strong{display:block}.plan-card .plan-price{font-size:18px;font-weight:600;margin:5px 0}.seller-plan-note{font-size:12px;color:var(--muted)}.similar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}.similar-grid .card{min-width:0}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:10px 0 16px}.plan-card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}.plan-card strong{display:block}.plan-card .plan-price{font-size:18px;font-weight:600;margin:5px 0}.seller-plan-note{font-size:12px;color:var(--muted)}
+.variant-box{border:1px solid var(--line);border-radius:8px;padding:14px;margin:14px 0;background:var(--soft2)}.variant-box h3{margin-bottom:8px}.variant-editor{border:1px solid var(--line);border-radius:6px;padding:12px;margin:10px 0;background:#fff}.variant-editor textarea{min-height:70px}.variant-option{margin-bottom:10px}.variant-choice{margin:12px 0}.variant-choice select{max-width:100%}.similar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}.similar-grid .card{min-width:0}
 
 /* Fitur tambahan BeliDulu */
 .toolbar .sortbox{max-width:190px;min-width:150px}
@@ -277,7 +278,7 @@ const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 
 /* ====== Pengaturan dasar ====== */
-const APP_BUILD = 2026102704;             // naikkan angka ini setiap kali file website diperbarui
+const APP_BUILD = 2026102705;             // naikkan angka ini setiap kali file website diperbarui
 const ADMIN_PASSWORD = "BeliDuluajaya";   // ubah di sini jika ingin mengganti kata sandi pengelola
 const STATUSES = ['Menunggu konfirmasi','Diproses','Dikirim','Sampai','Selesai','Dibatalkan'];
 const CANCELABLE = ['Menunggu konfirmasi','Diproses'];
@@ -789,6 +790,7 @@ function viewCheckout(id) {
       ${S.settings.couponCode ? `<div class="field"><label>Kode kupon (opsional)</label><input name="coupon" id="coupon" placeholder="Masukkan ${esc(S.settings.couponCode)}"><p class="muted small">Kupon ${esc(S.settings.couponCode)} memberi diskon ${Number(S.settings.couponPercent)||10}% pada subtotal produk.</p></div>` : ''}
       <div class="field"><label class="check"><input type="checkbox" name="saveAddress" id="saveAddress" checked> Simpan alamat di perangkat ini untuk pembelian berikutnya</label></div>
       ${S.settings.paymentInfo ? `<div class="note"><strong>Informasi pembayaran</strong><div class="pre">${esc(S.settings.paymentInfo)}</div></div><div class="field"><label>Tautan bukti pembayaran (opsional, imgbb)</label><input name="paymentProof" placeholder="https://i.ibb.co/..." inputmode="url"></div>` : ''}
+      ${Object.entries(p.variants||{}).filter(([key,v])=>v && v.enabled && Array.isArray(v.options) && v.options.length).map(([key,v])=>`<div class="field variant-choice"><label class="req">${({color:'Warna',size:'Ukuran',model:'Model',custom:'Pilihan lainnya'})[key]||'Pilihan'}</label><select name="variant_${key}" required><option value="">Pilih ${({color:'warna',size:'ukuran',model:'model',custom:'pilihan'})[key]||'opsi'}</option>${v.options.map(opt=>`<option value="${esc(opt)}">${esc(opt)}</option>`).join('')}</select></div>`).join('')}
       ${waField}
       <button class="btn" type="submit">Konfirmasi pesanan</button>
       <p class="muted small" style="margin-top:10px">Setelah dikonfirmasi, rincian pesanan akan dikirim lewat WhatsApp.</p>
@@ -835,11 +837,20 @@ async function submitCheckout(form) {
     if (!was.length) return toast('Nomor WhatsApp admin belum diatur.');
     wa = was[parseInt(v('wa')) || 0] || was[0];
   }
+  const selectedVariants = {};
+  for (const [key,label] of [['color','Warna'],['size','Ukuran'],['model','Model'],['custom','Pilihan lainnya']]) {
+    const options = p.variants?.[key];
+    if (options?.enabled && Array.isArray(options.options) && options.options.length) {
+      const selected = v('variant_'+key);
+      if (!selected || !options.options.includes(selected)) return toast('Pilih '+label.toLowerCase()+' produk terlebih dahulu.');
+      selectedVariants[label] = selected;
+    }
+  }
   const customer = { name: v('name'), phone, provinsi: v('provinsi'), kota: v('kota'), kecamatan: v('kecamatan'), kodepos: v('kodepos'), jalan: v('jalan'), rumah: v('rumah'), noRumah: v('noRumah'), detail: v('detail') };
   if (f.get('saveAddress') === 'on') { const {name, phone, provinsi, kota, kecamatan, kodepos, jalan, rumah, noRumah, detail} = customer; localStorage.setItem('bd_address', JSON.stringify({name, phone, provinsi, kota, kecamatan, kodepos, jalan, rumah, noRumah, detail})); }
   const code = makeCode(); const now = Date.now();
   const order = { createdAt: now, updatedAt: now, status: 'Menunggu konfirmasi', productId: p.id, sellerId: p.sellerId || null, sellerName: p.sellerName || '',
-    items: [{ productId: p.id, name: p.name, price: effectivePrice(p), qty, image: (p.images || [])[0] || '' }],
+    items: [{ productId: p.id, name: p.name, price: effectivePrice(p), qty, image: (p.images || [])[0] || '', variants: selectedVariants }],
     subtotal: finalSubtotal, couponCode: discountAmount ? couponCode : '', discountAmount, paymentProof: v('paymentProof'), customer, waNumber: wa.number, waLabel: wa.label || '', resi: '', note: '',
     history: [{ status: 'Menunggu konfirmasi', note: 'Pesanan dibuat', at: now, by: 'pembeli' }] };
   const btn = $('button[type=submit]', form); btn.disabled = true; btn.textContent = 'Menyimpan...';
@@ -850,7 +861,7 @@ async function submitCheckout(form) {
     addMyCode(code);
   } catch (e) { console.error(e); btn.disabled = false; btn.textContent = 'Konfirmasi pesanan'; return toast('Pesanan gagal disimpan. Coba lagi.'); }
   const msg = [`*Pesanan baru - ${S.settings.storeName}*`, `Kode pesanan: ${code}`, '',
-    `Produk: ${p.name}`, `Jumlah: ${qty}`, `Harga satuan: ${rupiah(effectivePrice(p))}`, `Subtotal: ${rupiah(baseSubtotal)}`, discountAmount ? `Diskon kupon ${couponCode}: -${rupiah(discountAmount)}` : '', `Total produk: ${rupiah(order.subtotal)} (belum termasuk ongkir)`, order.paymentProof ? `Bukti pembayaran: ${order.paymentProof}` : '', '',
+    `Produk: ${p.name}`, ...Object.entries(selectedVariants).map(([k,val]) => `${k}: ${val}`), `Jumlah: ${qty}`, `Harga satuan: ${rupiah(effectivePrice(p))}`, `Subtotal: ${rupiah(baseSubtotal)}`, discountAmount ? `Diskon kupon ${couponCode}: -${rupiah(discountAmount)}` : '', `Total produk: ${rupiah(order.subtotal)} (belum termasuk ongkir)`, order.paymentProof ? `Bukti pembayaran: ${order.paymentProof}` : '', '',
     '*Data pembeli*', `Nama: ${customer.name}`, `No. telepon: ${customer.phone}`, '',
     '*Alamat pengiriman*', fmtAddress(customer), '', 'Mohon konfirmasi pesanan dan total ongkir. Terima kasih.'].join('\n');
   const url = waLink(wa.number, msg);
@@ -892,7 +903,7 @@ function buyerCard(o) {
   const helpMsg = `Halo ${who}, saya ingin menanyakan pesanan ${o.code} atas nama ${o.customer.name}.`;
   return `<article class="panel order-card" data-code="${esc(o.code)}">
     <div class="oc-head"><div><strong>${esc(o.code)}</strong><div class="muted small">${fmtDate(o.createdAt)}</div></div>${badge(o.status)}</div>
-    ${o.items.map(i => `<div class="oc-item">${imgTag(i.image, i.name, 'thumb')}<div><div>${esc(i.name)}</div><div class="muted small">${i.qty} x ${rupiah(i.price)}</div></div></div>`).join('')}
+    ${o.items.map(i => `<div class="oc-item">${imgTag(i.image, i.name, 'thumb')}<div><div>${esc(i.name)}</div>${i.variants && Object.keys(i.variants).length ? `<div class="muted small">${Object.entries(i.variants).map(([k,v])=>`${esc(k)}: ${esc(v)}`).join(' · ')}</div>` : ''}<div class="muted small">${i.qty} x ${rupiah(i.price)}</div></div></div>`).join('')}
     <div class="oc-total">Subtotal ${rupiah(o.subtotal)} <span class="muted small">(belum termasuk ongkir)</span></div>
     ${o.resi ? `<p class="small"><strong>Resi / info pengiriman:</strong> ${esc(o.resi)}</p>` : ''}
     <ul class="tl">${(o.history || []).map(h => `<li><strong>${esc(h.status)}</strong>${h.note ? ' - ' + esc(h.note) : ''}<div class="muted">${fmtDate(h.at)}</div></li>`).join('')}</ul>
@@ -944,6 +955,9 @@ function productForm(p, ctx) {
       <div class="field"><label>Stok (kosong = tidak dibatasi)</label><input name="stock" type="number" min="0" value="${typeof p.stock === 'number' ? p.stock : ''}"></div>
     </div>
     <div class="row2"><div class="field"><label>Harga diskon (opsional, Rp)</label><input name="discountPrice" type="number" min="0" value="${p.discountPrice ?? ''}" placeholder="Kosongkan jika tidak diskon"></div><div class="field"><label class="check"><input type="checkbox" name="preorder" ${p.preorder ? 'checked' : ''}> Produk pre-order</label></div></div>
+    <section class="variant-box"><h3>Variasi produk</h3><p class="muted small">Centang jenis variasi yang ingin diaktifkan. Pembeli wajib memilihnya sebelum memesan.</p>
+      ${['Warna','Ukuran','Model','Lainnya'].map((label,i)=>{const key=['color','size','model','custom'][i], v=(p.variants||{})[key]||{};return `<div class="variant-editor"><label class="check"><input type="checkbox" name="variant_${key}_enabled" ${v.enabled?'checked':''}> Aktifkan pilihan ${label}</label><div class="field" style="margin:8px 0 0"><label>Daftar pilihan ${label.toLowerCase()} (pisahkan dengan koma atau baris baru)</label><textarea name="variant_${key}_options" placeholder="${i===0?'Hitam, Putih, Biru':i===1?'S, M, L, XL':i===2?'Model A, Model B':'Pilihan 1, Pilihan 2'}">${esc((v.options||[]).join('\n'))}</textarea></div></div>`}).join('')}
+    </section>
     <div class="field"><label>Foto produk: tempel link imgbb atau kode HTML, tambah foto lain bila perlu</label>${imgPicker('images', p.images || [], { max: 8 })}${IMG_STEPS}</div>
     <div class="field"><label>Deskripsi</label><textarea name="description" style="min-height:130px">${esc(p.description || '')}</textarea></div>
     <div class="field"><label class="check"><input type="checkbox" name="active" ${p.active === false ? '' : 'checked'}> Tampilkan di toko</label></div>
@@ -958,7 +972,14 @@ async function saveProduct(form) {
   const stockRaw = v('stock');
   const discountRaw = v('discountPrice'); const discountPrice = discountRaw === '' ? null : Math.max(0, parseInt(discountRaw)||0);
   if (discountPrice !== null && discountPrice >= price) return toast('Harga diskon harus lebih rendah dari harga normal.');
-  const data = { name: v('name'), price, discountPrice, preorder: f.get('preorder') === 'on', category: v('category'), description: (f.get('description') || '').toString().trim(), images: ipValues(ip),
+  const variants = {};
+  for (const [key,label] of [['color','Warna'],['size','Ukuran'],['model','Model'],['custom','Lainnya']]) {
+    const enabled = f.get('variant_'+key+'_enabled') === 'on';
+    const options = (f.get('variant_'+key+'_options') || '').toString().split(/[\n,]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,50);
+    if (enabled && !options.length) return toast('Isi minimal satu pilihan untuk variasi '+label+'.');
+    variants[key] = { enabled, options: enabled ? options : [] };
+  }
+  const data = { name: v('name'), price, discountPrice, preorder: f.get('preorder') === 'on', category: v('category'), description: (f.get('description') || '').toString().trim(), images: ipValues(ip), variants,
     stock: stockRaw === '' ? null : Math.max(0, parseInt(stockRaw) || 0), active: f.get('active') === 'on', updatedAt: Date.now() };
   try {
     if (v('id')) {
