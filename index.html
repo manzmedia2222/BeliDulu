@@ -127,6 +127,7 @@ textarea{min-height:90px;resize:vertical}
 .desc{white-space:pre-wrap;color:#2b3748;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .seller{display:flex;gap:10px;align-items:center;margin:12px 0}
 .seller-link{color:inherit;text-decoration:none;border-radius:8px;padding:8px;margin:8px -8px;transition:background .15s}.seller-link:hover{background:var(--soft)}.seller-link:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.store-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.store-logo{width:88px;height:88px;object-fit:cover;border:1px solid var(--line);border-radius:12px;background:var(--soft);flex:none}.store-stats{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:var(--muted)}.store-stats strong{color:var(--ink)}.store-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 
 .rev-list{margin-top:14px}
 .rev{padding:14px 0;border-top:1px solid var(--line)}
@@ -367,7 +368,7 @@ const S = {
   admin: sessionStorage.getItem('bd_admin') === '1',
   tab: 'orders', orders: [], ordFilter: 'Semua', ordQ: '', openOrders: new Set(),
   my: {}, unsubOrders: null,
-  user: null, profile: null, authReady: false, users: {},
+  user: null, profile: null, authReady: false, users: {}, followBusy: false,
   stab: 'products', sellerOrders: [], unsubSeller: null
 };
 const getCart = () => { try { return JSON.parse(localStorage.getItem('bd_cart') || '[]'); } catch(e) { return []; } };
@@ -575,11 +576,38 @@ function renderWishPage() {
   g.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty" style="grid-column:1/-1">Belum ada produk favorit.<br><a href="#/">Lihat produk</a></div>';
 }
 
-function viewStorefront(uid) {
+async function viewStorefront(uid) {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
+  if (!uid) { app.innerHTML = '<div class="empty">Profil toko tidak ditemukan.</div>'; return; }
+  app.innerHTML = loadingHTML;
+  let seller = null;
+  try { seller = await getUser(uid); } catch(e) {}
+  if (!seller) {
+    const product = S.products.find(p => p.sellerId === uid);
+    if (product) seller = {storeName:product.sellerName || 'Toko penjual'};
+  }
+  if (!seller) { app.innerHTML = '<div class="empty">Akun toko tidak ditemukan.<br><a href="#/">Kembali ke beranda</a></div>'; return; }
   const mine = S.products.filter(p => p.sellerId === uid && visible(p));
-  const name = mine[0]?.sellerName || 'Toko penjual';
-  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div><section class="panel"><h1>${esc(name)}</h1><p class="muted">Etalase produk penjual</p><div class="grid">${mine.length ? mine.map(cardHTML).join('') : '<div class="empty">Toko ini belum memiliki produk aktif.</div>'}</div></section>`;
+  const name = seller.storeName || seller.name || mine[0]?.sellerName || 'Toko penjual';
+  const followers = Array.isArray(seller.followers) ? seller.followers : [];
+  const following = !!S.user && followers.includes(S.user.uid);
+  const logo = seller.storeLogo || '';
+  const wa = seller.wa || '';
+  const url = location.origin + location.pathname + '#/toko/' + encodeURIComponent(uid);
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
+  <section class="panel">
+    <div class="store-head">${logo ? imgTag(logo, 'Logo '+name, 'store-logo') : `<div class="store-logo" style="display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;color:var(--primary-d)">${esc(name.trim().charAt(0).toUpperCase() || 'T')}</div>`}
+      <div style="flex:1;min-width:180px"><h1>${esc(name)}</h1><p class="muted small">Profil toko di BeliDulu</p>${seller.bio ? `<p style="white-space:pre-wrap">${esc(seller.bio)}</p>` : '<p class="muted">Belum ada deskripsi toko.</p>'}</div>
+    </div>
+    <div class="store-stats"><span><strong>${followers.length}</strong> Followers</span><span><strong>${mine.length}</strong> Produk</span></div>
+    <div class="store-actions">
+      ${S.user && S.user.uid !== uid ? `<button class="btn ${following ? 'ghost' : ''}" data-act="toggle-follow" data-id="${esc(uid)}">${following ? 'Unfollow' : 'Follow'}</button>` : (!S.user ? `<button class="btn ghost" data-act="gl-login">Masuk untuk Follow</button>` : '<span class="badge">Toko Anda</span>')}
+      ${wa ? `<a class="btn" target="_blank" rel="noopener" href="${esc(waLink(wa, 'Halo, saya melihat toko '+name+' di BeliDulu.'))}">Chat penjual</a>` : ''}
+      <button class="btn ghost" data-act="copy-store-url" data-id="${esc(uid)}">Salin URL profil</button>
+      <button class="btn ghost" data-act="share-store" data-id="${esc(uid)}">Bagikan profil</button>
+    </div>
+  </section>
+  <section style="margin-top:24px"><h2>Produk yang dijual</h2><div class="grid" style="margin-top:14px">${mine.length ? mine.map(cardHTML).join('') : '<div class="empty" style="grid-column:1/-1">Toko ini belum memiliki produk aktif.</div>'}</div></section>`;
 }
 
 /* ====== Detail produk + ulasan ====== */
@@ -589,6 +617,7 @@ function viewProduct(id) {
   if (!p || !visible(p)) { app.innerHTML = `${errBanner()}<div class="empty">Produk tidak ditemukan.<br><a href="#/">Kembali ke beranda</a></div>`; return; }
   document.title = p.name + ' - ' + (S.settings.storeName || '');
   const imgs = p.images || []; const out = typeof p.stock === 'number' && p.stock <= 0; const avg = avgOf(p); const on = getWish().includes(p.id);
+  const sellerProfile = p.sellerId ? (S.users[p.sellerId] || {}) : {};
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a><span class="crumb"><a href="#/">Produk</a> / ${esc(p.name)}</span></div>
   <div class="detail">
     <div class="gal"><div class="main">${imgTag(imgs[0], p.name)}</div>
@@ -601,7 +630,7 @@ function viewProduct(id) {
       <div class="price-note" style="margin-bottom:14px">(belum termasuk ongkir)</div>
       ${p.category ? `<p class="small muted">Kategori: ${esc(p.category)}</p>` : ''}
       ${typeof p.stock === 'number' ? `<p class="small muted">Stok: ${p.stock > 0 ? p.stock : 'habis'}</p>` : ''}
-      <div id="sellerBox"></div>
+      ${p.sellerId ? `<a class="seller seller-link" href="#/toko/${esc(p.sellerId)}">${sellerProfile.storeLogo ? imgTag(sellerProfile.storeLogo,'Logo toko','store-logo') : avatarHTML('',p.sellerName || 'T','lg')}<span><strong>${esc(sellerProfile.storeName || p.sellerName || 'Toko penjual')}</strong><span class="muted small" style="display:block">Lihat profil toko</span></span></a>` : ''}
       <div class="actions" style="margin-top:0">
         ${out ? '<span class="btn off">Stok habis</span>' : `<a class="btn" href="#/beli/${esc(p.id)}">Beli</a>`}
         <button class="btn ghost wishbtn${on ? ' on' : ''}" data-act="wish" data-id="${esc(p.id)}" aria-pressed="${on}">${wishLabel(on)}</button>
@@ -963,7 +992,7 @@ function renderSellerTab() {
   const b = $('#sBody'); if (!b) return;
   if (S.stab === 'products') {
     const mine = S.products.filter(p => p.sellerId === S.user.uid);
-    b.innerHTML = `<div class="actions" style="margin:0 0 14px;justify-content:space-between"><h2 style="margin:0">Produk saya</h2><button class="btn" data-act="p-new-s">Tambah produk</button></div>
+    b.innerHTML = `<div class="actions" style="margin:0 0 14px;justify-content:space-between"><h2 style="margin:0">Produk saya</h2><div class="actions"><button class="btn ghost sm" data-act="copy-store-name">Salin nama akun</button><button class="btn ghost sm" data-act="copy-store-url" data-id="${esc(S.user.uid)}">Salin URL profil</button><button class="btn" data-act="p-new-s">Tambah produk</button></div></div>
     <div class="panel">${mine.length ? mine.map(p => `<div class="list-row">${imgTag((p.images || [])[0], p.name, 'thumb')}
       <div class="grow"><div class="t">${esc(p.name)}</div><div class="muted small">${rupiah(p.price)} | Stok: ${typeof p.stock === 'number' ? p.stock : 'tidak dibatasi'} | ${p.approved === false ? 'Menunggu persetujuan' : (p.active === false ? 'Disembunyikan' : 'Tampil')}</div></div>
       <button class="btn ghost sm" data-act="copy-product-url" data-id="${esc(p.id)}">Salin URL</button><button class="btn ghost sm" data-act="p-edit-s" data-id="${esc(p.id)}">Ubah</button><button class="linkbtn danger" data-act="p-del" data-id="${esc(p.id)}">Hapus</button></div>`).join('') : '<div class="empty">Belum ada produk. Klik "Tambah produk".</div>'}</div>`;
@@ -992,7 +1021,8 @@ function renderSellerTab() {
         </div><p class="seller-plan-note">Paket berbayar diproses melalui WhatsApp developer. Paket baru aktif setelah pengelola memverifikasi pembayaran.</p>`}
         <div class="field"><label class="req">Nama toko</label><input name="storeName" value="${esc(pr.storeName || '')}"></div>
         <div class="field"><label class="req">Nomor WhatsApp penjual (pesanan dikirim ke sini)</label><input name="wa" type="tel" placeholder="08xxxxxxxxxx" value="${esc(pr.wa || '')}"></div>
-        <div class="field"><label>Tentang toko</label><textarea name="bio" maxlength="300">${esc(pr.bio || '')}</textarea></div>
+        <div class="field"><label>Deskripsi toko</label><textarea name="bio" maxlength="500" placeholder="Ceritakan toko dan produk yang dijual">${esc(pr.bio || '')}</textarea></div>
+         ${pr.storeName ? `<div class="note">URL profil toko dapat dibagikan di bio media sosial: <a href="#/toko/${esc(S.user.uid)}">Lihat profil toko</a><div class="actions"><button type="button" class="btn ghost sm" data-act="copy-store-url" data-id="${esc(S.user.uid)}">Salin URL profil</button></div></div>` : ''}
       </div>
       <button class="btn" type="submit">Simpan profil</button></form>`;
     initIps(b);
@@ -1002,6 +1032,38 @@ function renderSellerOrders() {
   const box = $('#oList'); if (!box) return;
   box.innerHTML = S.sellerOrders.length ? S.sellerOrders.map(o => adminOrderHTML(o, false)).join('') : '<div class="empty">Belum ada pesanan masuk.</div>';
 }
+
+async function copyStoreUrl(uid) {
+  if (!uid) return;
+  const url = location.origin + location.pathname + '#/toko/' + encodeURIComponent(uid);
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(url); toast('URL profil toko disalin.'); }
+    else { const t=document.createElement('textarea'); t.value=url; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); if(ok) toast('URL profil toko disalin.'); else prompt('Salin URL profil toko:',url); }
+  } catch(e) { prompt('Salin URL profil toko:',url); }
+}
+function shareStore(uid) {
+  const url = location.origin + location.pathname + '#/toko/' + encodeURIComponent(uid);
+  const seller = S.users[uid] || {};
+  const title = seller.storeName || seller.name || 'Toko BeliDulu';
+  if (navigator.share) navigator.share({title, text:'Lihat toko '+title+' di BeliDulu', url}).catch(()=>{});
+  else copyStoreUrl(uid);
+}
+async function toggleFollow(uid) {
+  if (!S.user) return googleLogin();
+  if (!uid || uid === S.user.uid || S.followBusy) return;
+  S.followBusy = true;
+  try {
+    const ref = doc(db,'users',uid), snap = await getDoc(ref);
+    if (!snap.exists()) { toast('Profil toko tidak ditemukan.'); return; }
+    const data = snap.data(), followers = Array.isArray(data.followers) ? data.followers : [];
+    const next = followers.includes(S.user.uid) ? followers.filter(id=>id!==S.user.uid) : [...followers,S.user.uid];
+    await updateDoc(ref,{followers:next, followersCount:next.length, updatedAt:Date.now()});
+    S.users[uid] = {...data,followers:next,followersCount:next.length};
+    viewStorefront(uid);
+    toast(next.includes(S.user.uid) ? 'Berhasil follow toko.' : 'Berhasil unfollow toko.');
+  } catch(err) { console.error(err); toast('Gagal memperbarui follow. Periksa aturan Firestore.'); }
+  finally { S.followBusy = false; }
+}
+
 async function copyProductUrl(id) {
   const p = S.products.find(x => x.id === id); if (!p) return toast('Produk tidak ditemukan.');
   const url = location.origin + location.pathname + '#/produk/' + encodeURIComponent(id);
@@ -1033,7 +1095,7 @@ Permintaan: ${plan === (S.profile.sellerPlan || '') ? 'perpanjangan' : 'ganti pa
 
 async function saveProfile(form) {
   const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim();
-  const ip = $('.ip', form); if (ipInvalid(ip)) return toast('Link foto profil tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  const ip = $('.ip[data-ip="photo"]', form); const logoIp = $('.ip[data-ip="storeLogo"]', form); if (ipInvalid(ip) || (logoIp && ipInvalid(logoIp))) return toast('Link gambar tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
   const isSeller = S.profile?.accountDisabled ? false : (f.get('isSeller') === 'on');
   const wa = normPhone(v('wa'));
   if (isSeller) {
@@ -1049,7 +1111,7 @@ async function saveProfile(form) {
   const activeUnchanged = packageIsActive(S.profile) && plan === (S.profile?.sellerPlan || 'trial') && !packageNeedsRenewal(S.profile);
   const planStatus = activeUnchanged ? (S.profile?.planStatus || 'active') : (plan === 'trial' ? (trialActive ? 'trial' : 'expired') : (paidAlreadyActive ? 'active' : 'pending'));
   const sellerActive = !S.profile?.accountDisabled && isSeller && (activeUnchanged || trialActive || paidAlreadyActive || (was && !S.profile?.sellerPlan));
-  const data = { email: S.user.email || '', name: v('name'), photo: ipValues(ip)[0] || '', isSeller: sellerActive, storeName: v('storeName'), wa: isSeller ? wa : (S.profile?.wa || ''), bio: v('bio'), sellerPlan: plan, sellerPlanLabel: planMeta.label, sellerPlanPrice: planMeta.price, sellerPlanDays: planMeta.days, trialStartedAt, trialUsed: !!(S.profile?.trialUsed || plan === 'trial'), subscriptionExpiresAt: activeUnchanged ? S.profile.subscriptionExpiresAt : (plan === 'trial' ? trialStartedAt + 7*86400000 : (paidAlreadyActive ? (S.profile?.subscriptionExpiresAt || null) : null)), accountDisabled: !!S.profile?.accountDisabled, planStatus, updatedAt: Date.now() };
+  const data = { email: S.user.email || '', name: v('name'), photo: ipValues(ip)[0] || '', isSeller: sellerActive, storeName: v('storeName'), storeLogo: logoIp ? (ipValues(logoIp)[0] || '') : (S.profile?.storeLogo || ''), wa: isSeller ? wa : (S.profile?.wa || ''), bio: v('bio'), sellerPlan: plan, sellerPlanLabel: planMeta.label, sellerPlanPrice: planMeta.price, sellerPlanDays: planMeta.days, trialStartedAt, trialUsed: !!(S.profile?.trialUsed || plan === 'trial'), subscriptionExpiresAt: activeUnchanged ? S.profile.subscriptionExpiresAt : (plan === 'trial' ? trialStartedAt + 7*86400000 : (paidAlreadyActive ? (S.profile?.subscriptionExpiresAt || null) : null)), accountDisabled: !!S.profile?.accountDisabled, planStatus, updatedAt: Date.now() };
   try {
     await setDoc(doc(db, 'users', S.user.uid), data, { merge: true });
     S.profile = { ...(S.profile || {}), ...data }; delete S.users[S.user.uid];
@@ -1311,6 +1373,10 @@ document.addEventListener('click', async e => {
   else if (act === 'mobile-nav') { const nav=$('#mainNav'); const open=nav.classList.toggle('mobile-open'); el.setAttribute('aria-expanded', String(open)); el.textContent=open ? '✕ Tutup' : '☰ Menu'; }
   else if (act === 'seller-disable') { const uid=el.dataset.id; if(!confirm('Nonaktifkan akun penjual ini? Akun tidak dapat menambahkan atau menjual produk.')) return; try { await updateDoc(doc(db,'users',uid),{accountDisabled:true,isSeller:false,planStatus:'disabled',updatedAt:Date.now()}); const ps=await getDocs(query(collection(db,'products'),where('sellerId','==',uid))); await Promise.all(ps.docs.map(d=>updateDoc(d.ref,{active:false,approved:false,disabledByAdmin:true,updatedAt:Date.now()}))); if(S.user?.uid===uid){S.profile={...(S.profile||{}),accountDisabled:true,isSeller:false,planStatus:'disabled'}; viewSeller();} toast('Akun penjual dinonaktifkan.'); renderAdminSellers(); } catch(err) { console.error(err); toast('Gagal menonaktifkan akun. Periksa aturan Firestore.'); } }
   else if (act === 'seller-enable') { const uid=el.dataset.id; try { await updateDoc(doc(db,'users',uid),{accountDisabled:false,isSeller:false,planStatus:'expired',updatedAt:Date.now()}); toast('Blokir akun dibuka. Aktifkan paket untuk mengizinkan penjualan kembali.'); renderAdminSellers(); } catch(err) { console.error(err); toast('Gagal membuka blokir akun.'); } }
+  else if (act === 'copy-store-name') { const name=S.profile?.storeName || S.profile?.name || S.user?.displayName || ''; if(!name) return toast('Nama akun belum tersedia.'); try { await navigator.clipboard.writeText(name); toast('Nama akun disalin.'); } catch(e) { prompt('Salin nama akun:',name); } }
+  else if (act === 'copy-store-url') copyStoreUrl(el.dataset.id);
+  else if (act === 'share-store') shareStore(el.dataset.id);
+  else if (act === 'toggle-follow') toggleFollow(el.dataset.id);
   else if (act === 'share-product') shareProduct(el.dataset.id);
   else if (act === 'copy-product-url') copyProductUrl(el.dataset.id);
   else if (act === 'ask-seller') askSeller(el.dataset.id);
