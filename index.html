@@ -790,7 +790,7 @@ function viewCheckout(id) {
       ${S.settings.couponCode ? `<div class="field"><label>Kode kupon (opsional)</label><input name="coupon" id="coupon" placeholder="Masukkan ${esc(S.settings.couponCode)}"><p class="muted small">Kupon ${esc(S.settings.couponCode)} memberi diskon ${Number(S.settings.couponPercent)||10}% pada subtotal produk.</p></div>` : ''}
       <div class="field"><label class="check"><input type="checkbox" name="saveAddress" id="saveAddress" checked> Simpan alamat di perangkat ini untuk pembelian berikutnya</label></div>
       ${S.settings.paymentInfo ? `<div class="note"><strong>Informasi pembayaran</strong><div class="pre">${esc(S.settings.paymentInfo)}</div></div><div class="field"><label>Tautan bukti pembayaran (opsional, imgbb)</label><input name="paymentProof" placeholder="https://i.ibb.co/..." inputmode="url"></div>` : ''}
-      ${Object.entries(p.variants||{}).filter(([key,v])=>v && v.enabled && Array.isArray(v.options) && v.options.length).map(([key,v])=>`<div class="field variant-choice"><label class="req">${({color:'Warna',size:'Ukuran',model:'Model',custom:'Pilihan lainnya'})[key]||'Pilihan'}</label><select name="variant_${key}" required><option value="">Pilih ${({color:'warna',size:'ukuran',model:'model',custom:'pilihan'})[key]||'opsi'}</option>${v.options.map(opt=>`<option value="${esc(opt)}">${esc(opt)}</option>`).join('')}</select></div>`).join('')}
+      ${Object.entries(p.variants||{}).filter(([key,v])=>v && v.enabled && Array.isArray(v.options) && v.options.length).map(([key,v])=>`<div class="field variant-choice"><label class="req">${({color:'Warna',size:'Ukuran',model:'Model',custom:'Pilihan lainnya'})[key]||'Pilihan'}</label><select name="variant_${key}" required><option value="">Pilih ${({color:'warna',size:'ukuran',model:'model',custom:'pilihan'})[key]||'opsi'}</option>${v.options.map(opt=>`<option value="${esc(opt)}">${esc(opt)}</option>`).join('')}</select><div id="variantPhotos_${key}"></div></div>`).join('')}
       ${waField}
       <button class="btn" type="submit">Konfirmasi pesanan</button>
       <p class="muted small" style="margin-top:10px">Setelah dikonfirmasi, rincian pesanan akan dikirim lewat WhatsApp.</p>
@@ -956,7 +956,7 @@ function productForm(p, ctx) {
     </div>
     <div class="row2"><div class="field"><label>Harga diskon (opsional, Rp)</label><input name="discountPrice" type="number" min="0" value="${p.discountPrice ?? ''}" placeholder="Kosongkan jika tidak diskon"></div><div class="field"><label class="check"><input type="checkbox" name="preorder" ${p.preorder ? 'checked' : ''}> Produk pre-order</label></div></div>
     <section class="variant-box"><h3>Variasi produk</h3><p class="muted small">Centang jenis variasi yang ingin diaktifkan. Pembeli wajib memilihnya sebelum memesan.</p>
-      ${['Warna','Ukuran','Model','Lainnya'].map((label,i)=>{const key=['color','size','model','custom'][i], v=(p.variants||{})[key]||{};return `<div class="variant-editor"><label class="check"><input type="checkbox" name="variant_${key}_enabled" ${v.enabled?'checked':''}> Aktifkan pilihan ${label}</label><div class="field" style="margin:8px 0 0"><label>Daftar pilihan ${label.toLowerCase()} (pisahkan dengan koma atau baris baru)</label><textarea name="variant_${key}_options" placeholder="${i===0?'Hitam, Putih, Biru':i===1?'S, M, L, XL':i===2?'Model A, Model B':'Pilihan 1, Pilihan 2'}">${esc((v.options||[]).join('\n'))}</textarea></div></div>`}).join('')}
+      ${['Warna','Ukuran','Model','Lainnya'].map((label,i)=>{const key=['color','size','model','custom'][i], v=(p.variants||{})[key]||{};return `<div class="variant-editor" data-variant-editor="${key}"><label class="check"><input type="checkbox" name="variant_${key}_enabled" ${v.enabled?'checked':''}> Aktifkan pilihan ${label}</label><div class="field" style="margin:8px 0 0"><label>Daftar pilihan ${label.toLowerCase()} (pisahkan dengan koma atau baris baru)</label><textarea name="variant_${key}_options" placeholder="${i===0?'Hitam, Putih, Biru':i===1?'S, M, L, XL':i===2?'Model A, Model B':'Pilihan 1, Pilihan 2'}">${esc((v.options||[]).join('\n'))}</textarea></div><div class="variant-photo-editors" data-photo-editors="${key}"></div></div>`}).join('')}
     </section>
     <div class="field"><label>Foto produk: tempel link imgbb atau kode HTML, tambah foto lain bila perlu</label>${imgPicker('images', p.images || [], { max: 8 })}${IMG_STEPS}</div>
     <div class="field"><label>Deskripsi</label><textarea name="description" style="min-height:130px">${esc(p.description || '')}</textarea></div>
@@ -964,11 +964,33 @@ function productForm(p, ctx) {
     <div class="actions"><button class="btn" type="submit">Simpan</button><button class="btn ghost" type="button" data-act="close">Batal</button></div>
   </form>`);
   initIps($('#modal'));
+  renderVariantPhotoEditors($('#modal'), p.variants || {});
+}
+function renderVariantPhotoEditors(root, existing = {}) {
+  $$('.variant-editor', root).forEach(editor => {
+    const key = editor.dataset.variantEditor;
+    const enabled = $(`[name="variant_${key}_enabled"]`, editor)?.checked;
+    const opts = ($(`[name="variant_${key}_options"]`, editor)?.value || '').split(/[\n,]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,50);
+    const host = $('[data-photo-editors]', editor); if (!host) return;
+    const previous = {};
+    $$('[data-variant-photo-key]', host).forEach(ip => { previous[ip.dataset.variantOption] = ipValues(ip); });
+    if (!enabled || !opts.length) { host.innerHTML = '<p class="muted small">Aktifkan variasi dan isi daftar pilihan untuk mengatur foto setiap pilihan.</p>'; return; }
+    host.innerHTML = '<p class="muted small" style="margin:10px 0 6px">Foto khusus tiap pilihan (opsional, maksimal 3 foto per pilihan)</p>' + opts.map((opt,i) => {
+      const saved = previous[opt] || existing[key]?.photos?.[opt] || [];
+      return `<div class="variant-photo-item" style="border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;margin:8px 0"><strong>${esc(opt)}</strong><div class="ip" data-ip="variant-photo-${key}-${i}" data-max="3" data-variant-photo-key="${key}" data-variant-option="${esc(opt)}"><div class="ip-rows">${(saved.length?saved:['']).slice(0,3).map(ipRow).join('')}</div><button type="button" class="btn ghost sm" data-act="ip-add">Tambah foto</button> <span class="muted small">maks. 3 foto</span><div class="pv"></div></div></div>`;
+    }).join('');
+    initIps(host);
+  });
+}
+function renderVariantPhotoPreview(key, option) {
+  const p = S.cur; const host = $(`#variantPhotos_${key}`); if (!host) return;
+  const photos = p?.variants?.[key]?.photos?.[option] || [];
+  host.innerHTML = photos.length ? `<div class="variant-photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${photos.slice(0,3).map(src=>`<img src="${esc(src)}" alt="Foto ${esc(option)}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #ddd" onerror="this.style.display='none'">`).join('')}</div>` : '';
 }
 async function saveProduct(form) {
   const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim(); const ctx = v('ctx');
   const price = parseInt(v('price')); if (!v('name') || isNaN(price) || price < 0) return toast('Nama dan harga wajib diisi.');
-  const ip = $('.ip', form); if (ipInvalid(ip)) return toast('Ada link foto yang tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  const ip = $('.ip[data-ip="images"]', form); if ($$('.ip', form).some(ipInvalid)) return toast('Ada link foto yang tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.')
   const stockRaw = v('stock');
   const discountRaw = v('discountPrice'); const discountPrice = discountRaw === '' ? null : Math.max(0, parseInt(discountRaw)||0);
   if (discountPrice !== null && discountPrice >= price) return toast('Harga diskon harus lebih rendah dari harga normal.');
@@ -977,7 +999,9 @@ async function saveProduct(form) {
     const enabled = f.get('variant_'+key+'_enabled') === 'on';
     const options = (f.get('variant_'+key+'_options') || '').toString().split(/[\n,]+/).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,50);
     if (enabled && !options.length) return toast('Isi minimal satu pilihan untuk variasi '+label+'.');
-    variants[key] = { enabled, options: enabled ? options : [] };
+    const photos = {};
+    if (enabled) $$(`[data-variant-photo-key="${key}"]`, form).forEach(ip => { const list = ipValues(ip).slice(0,3); if (list.length && options.includes(ip.dataset.variantOption)) photos[ip.dataset.variantOption] = list; });
+    variants[key] = { enabled, options: enabled ? options : [], photos };
   }
   const data = { name: v('name'), price, discountPrice, preorder: f.get('preorder') === 'on', category: v('category'), description: (f.get('description') || '').toString().trim(), images: ipValues(ip), variants,
     stock: stockRaw === '' ? null : Math.max(0, parseInt(stockRaw) || 0), active: f.get('active') === 'on', updatedAt: Date.now() };
@@ -1420,6 +1444,8 @@ document.addEventListener('change', e => {
   if (e.target.id === 'sortProducts') renderGrid();
   else if (e.target.id === 'of') { S.ordFilter = e.target.value; renderAdminOrders(); }
   else if (e.target.name === 'isSeller') $('#sellerFields').classList.toggle('hide', !e.target.checked);
+  else if (e.target.closest && e.target.closest('form[data-form=product]') && (e.target.name?.startsWith('variant_'))) renderVariantPhotoEditors($('#modal'), {});
+  else if (e.target.name && e.target.name.startsWith('variant_') && e.target.name.split('_').length === 2) { renderVariantPhotoPreview(e.target.name.slice(8), e.target.value); }
 });
 document.addEventListener('toggle', e => { const d = e.target; if (d.matches && d.matches('details.order')) { d.open ? S.openOrders.add(d.dataset.code) : S.openOrders.delete(d.dataset.code); } }, true);
 $('#modal').addEventListener('mousedown', e => { if (e.target.id === 'modal') closeModal(); });
