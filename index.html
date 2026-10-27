@@ -241,6 +241,7 @@ details.order summary::-webkit-details-marker{display:none}
       <a href="#/keranjang" data-nav="keranjang">Keranjang <span id="cartCount"></span></a>
       <a href="#/pesanan" data-nav="pesanan">Pesanan saya</a>
       <a href="#/jual" data-nav="jual">Jual</a>
+      <a href="#/tentang" data-nav="tentang">About me</a>
       <span id="acct"></span>
     </nav>
   </div>
@@ -516,8 +517,30 @@ function route() {
   else if (page === 'favorit') viewWish();
   else if (page === 'keranjang') viewCart();
   else if (page === 'jual') viewSeller();
+  else if (page === 'tentang') viewAbout();
   else if (page === 'admin') viewAdmin();
   else viewHome();
+}
+
+/* ====== About me ====== */
+function viewAbout() {
+  document.title = 'About me - ' + (S.settings.storeName || 'BeliDulu');
+  app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
+  <section class="panel" style="max-width:720px;margin:0 auto">
+    <h1>Selamat datang di BeliDulu! 🚀</h1>
+    <p>BeliDulu adalah platform toko online siap pakai yang dirancang khusus untuk membantu para pelaku usaha, reseller, dan dropshipper memulai bisnis online mereka tanpa perlu pusing memikirkan teknis pembuatan website.</p>
+    <p>Kami percaya bahwa siapa pun bisa memiliki toko online yang terlihat profesional. Cukup daftar, unggah produkmu, dan mulai berjualan layaknya di marketplace besar.</p>
+    <h2 style="margin-top:20px">Mengapa memilih BeliDulu?</h2>
+    <ul style="list-style:none;padding:0;margin:0 0 16px">
+      <li>✅ Sistem sewa yang sangat terjangkau (mulai dari Rp 10.000/minggu).</li>
+      <li>✅ Tanpa perlu keahlian coding.</li>
+      <li>✅ Tampilan modern, bersih, dan mudah digunakan.</li>
+      <li>✅ Tersedia masa uji coba (Free Trial) 7 hari.</li>
+    </ul>
+    <p>Punya pertanyaan seputar paket sewa atau butuh bantuan teknis? Jangan ragu untuk menghubungi Admin Developer kami.</p>
+    <div class="actions"><a class="btn" href="https://wa.me/6282254388144" target="_blank" rel="noopener">Hubungi Admin 👈</a></div>
+    <p class="muted small" style="margin-top:8px">(Klik untuk chat langsung)</p>
+  </section>`;
 }
 window.addEventListener('hashchange', route);
 const errBanner = () => S.err ? `<div class="banner">${esc(S.err)}</div>` : '';
