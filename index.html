@@ -368,7 +368,7 @@ const S = {
   admin: sessionStorage.getItem('bd_admin') === '1',
   tab: 'orders', orders: [], ordFilter: 'Semua', ordQ: '', openOrders: new Set(),
   my: {}, unsubOrders: null,
-  user: null, profile: null, authReady: false, users: {}, followBusy: false,
+  user: null, profile: null, authReady: false, users: {}, followBusy: false, unsubStore: null, storeUid: null,
   stab: 'products', sellerOrders: [], unsubSeller: null
 };
 const getCart = () => { try { return JSON.parse(localStorage.getItem('bd_cart') || '[]'); } catch(e) { return []; } };
@@ -505,6 +505,7 @@ const tabLabel = list => { const n = list.filter(o => o.status === 'Menunggu kon
 function route() {
   const parts = (location.hash || '#/').slice(2).split('/');
   const page = currentPage(); const arg = decodeURIComponent(parts[1] || '');
+  if (page !== 'toko' && S.unsubStore) { S.unsubStore(); S.unsubStore = null; S.storeUid = null; }
   window.scrollTo(0, 0); closeModal();
   $$('nav a[data-nav]').forEach(a => a.classList.toggle('on', a.dataset.nav === page));
   document.title = (S.settings.storeName || 'BeliDulu') + (page === '' ? ' - Toko Online Praktis Tanpa Akun' : '');
@@ -579,9 +580,26 @@ function renderWishPage() {
 async function viewStorefront(uid) {
   if (!S.ready) { app.innerHTML = loadingHTML; return; }
   if (!uid) { app.innerHTML = '<div class="empty">Profil toko tidak ditemukan.</div>'; return; }
+  if (S.unsubStore) { S.unsubStore(); S.unsubStore = null; }
+  S.storeUid = uid;
   app.innerHTML = loadingHTML;
-  let seller = null;
-  try { seller = await getUser(uid); } catch(e) {}
+  try {
+    S.unsubStore = onSnapshot(doc(db, 'users', uid), snap => {
+      if (S.storeUid !== uid || currentPage() !== 'toko') return;
+      const seller = snap.exists() ? snap.data() : null;
+      S.users[uid] = seller;
+      renderStorefrontContent(uid, seller);
+    }, err => {
+      console.error('Live profile listener:', err);
+      renderStorefrontContent(uid, S.users[uid] || null);
+    });
+  } catch (e) {
+    const seller = await getUser(uid);
+    renderStorefrontContent(uid, seller);
+  }
+}
+function renderStorefrontContent(uid, seller) {
+  if (S.storeUid !== uid || currentPage() !== 'toko') return;
   if (!seller) {
     const product = S.products.find(p => p.sellerId === uid);
     if (product) seller = {storeName:product.sellerName || 'Toko penjual'};
@@ -591,9 +609,8 @@ async function viewStorefront(uid) {
   const name = seller.storeName || seller.name || mine[0]?.sellerName || 'Toko penjual';
   const followers = Array.isArray(seller.followers) ? seller.followers : [];
   const following = !!S.user && followers.includes(S.user.uid);
-  const logo = seller.storeLogo || '';
+  const logo = seller.storeLogo || seller.photo || '';
   const wa = seller.wa || '';
-  const url = location.origin + location.pathname + '#/toko/' + encodeURIComponent(uid);
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="#/">Kembali ke beranda</a></div>
   <section class="panel">
     <div class="store-head">${logo ? imgTag(logo, 'Logo '+name, 'store-logo') : `<div class="store-logo" style="display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;color:var(--primary-d)">${esc(name.trim().charAt(0).toUpperCase() || 'T')}</div>`}
