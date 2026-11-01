@@ -292,7 +292,7 @@ const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 
 /* ====== Pengaturan dasar ====== */
-const APP_BUILD = 2026102705;             // naikkan angka ini setiap kali file website diperbarui
+const APP_BUILD = 2026110101;             // naikkan angka ini setiap kali file website diperbarui
 const ADMIN_PASSWORD = "BeliDuluajaya";   // ubah di sini jika ingin mengganti kata sandi pengelola
 const STATUSES = ['Menunggu konfirmasi','Diproses','Dikirim','Sampai','Selesai','Dibatalkan'];
 const CANCELABLE = ['Menunggu konfirmasi','Diproses'];
@@ -309,7 +309,7 @@ const waLink = (num, text) => 'https://wa.me/' + normPhone(num) + '?text=' + enc
 const cleanTagline = t => String(t || '').replace(/\s*Data pesanan dikirim langsung ke WhatsApp admin\.?/gi, '').trim();
 const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="600" height="600" fill="#e8eef5"/><text x="50%" y="50%" fill="#8a9bb0" font-family="sans-serif" font-size="22" text-anchor="middle">Tanpa gambar</text></svg>');
 window.PH = PH;
-const imgTag = (src, alt, cls = '') => `<img ${cls ? `class="${cls}" ` : ''}src="${esc(src || PH)}" alt="${esc(alt)}" loading="lazy" onerror="this.onerror=null;this.src=window.PH">`;
+const imgTag = (src, alt, cls = '') => `<img ${cls ? `class="${cls}" ` : ''}src="${esc(src || PH)}" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=window.PH">`;
 const avatarHTML = (src, name, cls = '') => `<span class="avatar ${cls}">${src ? `<img src="${esc(src)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span>${esc(String(name || 'U').trim().charAt(0).toUpperCase())}</span></span>`;
 const visible = p => p.active !== false && p.approved !== false;
 
@@ -321,8 +321,30 @@ function toast(msg) {
 function openModal(html) { const m = $('#modal'); $('.modal', m).innerHTML = html; m.classList.remove('hide'); }
 function closeModal() { $('#modal').classList.add('hide'); }
 
-/* Ambil link gambar otomatis dari teks / kode HTML / BBCode / link imgbb */
-function extractImages(text) {
+/* Ambil link gambar otomatis dari teks / kode HTML / BBCode / link halaman.
+   Didukung: imgbb, imgur (termasuk album) dan imgbox (termasuk galeri). */
+const PAGE_IMG = new Map(); /* kunci halaman -> { status: 'loading' | 'ok' | 'fail', urls: [], at, promise } */
+const IMG_EXT = /\.(?:png|jpe?g|gif|gifv|webp|avif|bmp|svg)(?:\?[^\s]*)?$/i;
+const IMGUR_RESERVED = new Set(['upload','gallery','signin','register','account','apps','privacy','search','random','vidgif','memegen','emerald','topic','tagged']);
+const IBB_RESERVED = new Set(['album','upload','login','signup','explore','plugin','tos','privacy','about','faq','contact']);
+const isDirectImg = u => /^https?:\/\/i\.ibb\.co(?:\.com)?\//i.test(u) || IMG_EXT.test(u);
+function normImg(u) {
+  u = String(u || '').trim().replace(/^\/\//, 'https://').replace(/^http:\/\//i, 'https://');
+  /* imgbox: thumbnail (thumbsN ... _t) diganti ke ukuran asli (imagesN ... _o) */
+  u = u.replace(/^(https:\/\/)thumbs(\d*)\.imgbox\.com\/([^?\s]+?)_t\.(\w+)/i, '$1images$2.imgbox.com/$3_o.$4');
+  /* imgur: imgur.com/ID.ext -> i.imgur.com/ID.ext */
+  u = u.replace(/^https:\/\/(?:www\.|m\.)?imgur\.com\/([A-Za-z0-9]{5,9})\.(\w+)/i, 'https://i.imgur.com/$1.$2');
+  const m = u.match(/^https:\/\/i\.imgur\.com\/([A-Za-z0-9]+)\.(\w+)/i);
+  if (m) {
+    let id = m[1], ext = m[2].toLowerCase();
+    if ((id.length === 6 || id.length === 8) && /[sbtmlh]$/.test(id)) id = id.slice(0, -1); /* thumbnail imgur */
+    if (ext === 'gifv') ext = 'gif';
+    u = `https://i.imgur.com/${id}.${ext}`;
+  }
+  return u;
+}
+/* Pisahkan isian menjadi link gambar langsung dan link halaman yang harus dibuka dulu (album / halaman imgbox) */
+function scanImageText(text) {
   text = String(text || '').replace(/&amp;/g, '&');
   const found = []; let m;
   const attr = /(?:src|data-src)\s*=\s*["']([^"']+)["']/gi;
@@ -331,13 +353,120 @@ function extractImages(text) {
   while ((m = href.exec(text))) found.push(m[1]);
   const bare = /https?:\/\/[^\s"'<>\[\]()]+/gi;
   while ((m = bare.exec(text))) found.push(m[0]);
-  const direct = u => /^https?:\/\/i\.ibb\.co(\.com)?\//i.test(u) || /\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?[^\s]*)?$/i.test(u);
-  const out = [];
-  for (let u of found) {
-    u = u.trim().replace(/^http:\/\//i, 'https://');
-    if (direct(u) && !out.includes(u)) out.push(u);
+  const direct = [], pages = [], imgboxIds = [], imgurIds = [];
+  const addPage = (key, kind, id, pageUrls) => { if (!pages.some(p => p.key === key)) pages.push({ key, kind, id, pageUrls }); };
+  for (const raw of found) {
+    const u = String(raw).trim().replace(/^\/\//, 'https://').replace(/^http:\/\//i, 'https://');
+    const n = normImg(u);
+    if (isDirectImg(n)) { if (!direct.includes(n)) direct.push(n); continue; }
+    let pm;
+    if ((pm = u.match(/^https:\/\/(?:www\.|m\.)?imgur\.com\/(?:a|gallery)\/([A-Za-z0-9-]+)/i))) {
+      const id = pm[1].split('-').pop();
+      addPage('imgur:' + id, 'imgur', id, [`https://imgur.com/a/${id}/embed?pub=true`, `https://imgur.com/a/${id}`, `https://imgur.com/gallery/${id}`]);
+    } else if ((pm = u.match(/^https:\/\/(?:www\.)?imgbox\.com\/g\/([A-Za-z0-9]+)/i))) {
+      addPage('imgbox-g:' + pm[1], 'imgbox-g', pm[1], [`https://imgbox.com/g/${pm[1]}`]);
+    } else if ((pm = u.match(/^https:\/\/(?:www\.)?imgbox\.com\/([A-Za-z0-9]{8})(?:[\/?#]|$)/i))) {
+      imgboxIds.push(pm[1]);
+    } else if ((pm = u.match(/^https:\/\/ibb\.co(?:\.com)?\/([A-Za-z0-9]{5,10})(?:[\/?#]|$)/i)) && !IBB_RESERVED.has(pm[1].toLowerCase())) {
+      addPage('ibb:' + pm[1], 'ibb', pm[1], [`https://ibb.co/${pm[1]}`]);
+    } else if ((pm = u.match(/^https:\/\/(?:www\.|m\.)?imgur\.com\/([A-Za-z0-9]{5,8})(?:[\/?#]|$)/i)) && !IMGUR_RESERVED.has(pm[1].toLowerCase())) {
+      imgurIds.push(pm[1]);
+    }
+  }
+  /* link halaman imgbox / imgur tunggal tidak perlu dibuka bila link gambarnya sudah ikut tertempel (HTML / BBCode) */
+  imgboxIds.forEach(id => { if (!direct.some(d => d.includes('/' + id + '_'))) addPage('imgbox:' + id, 'imgbox', id, [`https://imgbox.com/${id}`]); });
+  imgurIds.forEach(id => { if (!direct.some(d => d.startsWith('https://i.imgur.com/' + id + '.'))) direct.push(`https://i.imgur.com/${id}.jpg`); });
+  return { direct, pages };
+}
+function extractImages(text) {
+  const { direct, pages } = scanImageText(text);
+  const out = [...direct];
+  for (const p of pages) {
+    const c = PAGE_IMG.get(p.key);
+    if (c && c.status === 'ok') c.urls.forEach(u => { if (!out.includes(u)) out.push(u); });
   }
   return out;
+}
+function pendingPages(text) {
+  return scanImageText(text).pages.filter(p => {
+    const c = PAGE_IMG.get(p.key);
+    return !c || c.status === 'loading' || (c.status === 'fail' && Date.now() - c.at > 20000);
+  });
+}
+const failedPages = text => scanImageText(text).pages.filter(p => PAGE_IMG.get(p.key)?.status === 'fail');
+
+/* Halaman imgur / imgbox tidak bisa dibaca langsung oleh browser (CORS), jadi dicoba lewat beberapa perantara */
+const PAGE_PROXIES = [
+  u => u,
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
+];
+async function fetchPageHtml(url) {
+  for (const mk of PAGE_PROXIES) {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const r = await fetch(mk(url), { signal: ctl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+      if (r.ok) { const txt = await r.text(); if (txt && txt.length > 300) return txt; }
+    } catch (e) {} finally { clearTimeout(t); }
+  }
+  throw new Error('halaman tidak dapat dibaca');
+}
+function parseImagePage(p, html) {
+  html = String(html).replace(/\\\//g, '/').replace(/&amp;/g, '&');
+  const out = []; let m;
+  const add = u => { u = normImg(u); if (isDirectImg(u) && !out.includes(u)) out.push(u); };
+  const meta = () => {
+    const r = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]*?content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*?(?:property|name)=["'](?:og:image|twitter:image)["']/i);
+    return r ? r[1] : '';
+  };
+  const boxRe = () => /https?:\/\/(?:images|thumbs)\d*\.imgbox\.com\/[A-Za-z0-9\/_.-]+?_[ot]\.(?:png|jpe?g|gif|webp|bmp)/gi;
+  if (p.kind === 'imgbox') {
+    const re = boxRe();
+    while ((m = re.exec(html))) if (m[0].includes('/' + p.id + '_')) add(m[0]);
+    if (!out.length) { const o = meta(); if (o && o.includes('/' + p.id + '_')) add(o); }
+  } else if (p.kind === 'imgbox-g') {
+    const re = boxRe();
+    while ((m = re.exec(html))) add(m[0]);
+    if (!out.length) add(meta());
+  } else if (p.kind === 'imgur') {
+    const re = /https?:\/\/i\.imgur\.com\/([A-Za-z0-9]{5,9})\.(?:png|jpe?g|gif|gifv|webp)/gi;
+    while ((m = re.exec(html))) add(m[0]);
+    const re2 = /"hash"\s*:\s*"([A-Za-z0-9]{5,7})"[^{}]*?"ext"\s*:\s*"\.(png|jpe?g|gif|webp)"/gi;
+    while ((m = re2.exec(html))) add(`https://i.imgur.com/${m[1]}.${m[2]}`);
+    if (!out.length) add(meta());
+  } else if (p.kind === 'ibb') {
+    add(meta());
+    if (!out.length && (m = /https?:\/\/i\.ibb\.co(?:\.com)?\/[^\s"'<>]+\.(?:png|jpe?g|gif|webp)/i.exec(html))) add(m[0]);
+  }
+  return out.slice(0, 20);
+}
+function resolveImagePage(p) {
+  const old = PAGE_IMG.get(p.key);
+  if (old && (old.status !== 'fail' || Date.now() - old.at <= 20000)) return old.promise || Promise.resolve();
+  const c = { status: 'loading', urls: [], at: Date.now() };
+  c.promise = (async () => {
+    try {
+      let urls = [];
+      for (const pageUrl of p.pageUrls) {
+        let html; try { html = await fetchPageHtml(pageUrl); } catch (e) { continue; }
+        urls = parseImagePage(p, html);
+        if (urls.length) break;
+      }
+      c.urls = urls; c.status = urls.length ? 'ok' : 'fail';
+    } catch (e) { c.status = 'fail'; }
+    c.at = Date.now();
+  })();
+  PAGE_IMG.set(p.key, c);
+  return c.promise;
+}
+/* Tunggu semua link halaman di dalam elemen selesai dibaca (dipakai sebelum menyimpan) */
+async function resolveIps(root) {
+  const jobs = [];
+  $$('.ip .ip-row input', root).forEach(i => { if (i.value.trim()) pendingPages(i.value).forEach(p => jobs.push(resolveImagePage(p))); });
+  if (jobs.length) { toast('Mengambil foto dari link...'); await Promise.all(jobs); }
+  $$('.ip', root).forEach(updateIp);
 }
 const stars = r => Array.from({length: 5}, (_, i) =>
   `<svg viewBox="0 0 24 24" width="14" height="14" class="star${i < Math.round(r) ? ' on' : ''}" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/></svg>`).join('');
@@ -351,16 +480,15 @@ const fmtAddress = c => [
   c.detail ? `Detail: ${c.detail}` : ''
 ].filter(Boolean).join('\n');
 
-const IMG_STEPS = `<details class="help"><summary>Cara mengirim foto lewat imgbb</summary><ol>
-<li>Buka <a href="https://imgbb.com" target="_blank" rel="noopener">imgbb.com</a>, lalu klik tombol untuk mulai upload.</li>
-<li>Pilih foto dari galeri atau komputer. Boleh memilih lebih dari satu.</li>
-<li>Klik Upload dan tunggu sampai selesai.</li>
-<li>Pada halaman hasil, buka pilihan kode (embed codes), lalu salin salah satu: Direct link, atau kode HTML (yang diawali <code>&lt;img src=</code> atau <code>&lt;a href=</code>).</li>
-<li>Tempel di satu kolom. Sistem otomatis mencari link gambar yang diperlukan. Untuk foto berikutnya, klik "Tambah foto lain" dan tempel lagi.</li>
-<li>Periksa pratinjau di bawah kolom. Jika gambar muncul, link sudah benar.</li></ol></details>`;
+const IMG_STEPS = `<details class="help"><summary>Cara mengirim foto (imgbb, imgur, atau imgbox)</summary><ol>
+<li>Upload foto ke salah satu: <a href="https://imgbb.com" target="_blank" rel="noopener">imgbb.com</a>, <a href="https://imgur.com" target="_blank" rel="noopener">imgur.com</a>, atau <a href="https://imgbox.com" target="_blank" rel="noopener">imgbox.com</a>. Boleh lebih dari satu foto.</li>
+<li>Setelah selesai, salin salah satu: link halaman (misalnya <code>imgur.com/a/...</code> atau <code>imgbox.com/...</code>), Direct link, kode HTML (<code>&lt;img src=</code> / <code>&lt;a href=</code>), atau BBCode (<code>[IMG]</code>).</li>
+<li>Tempel di satu kolom. Sistem otomatis mencari link gambarnya. Link album imgur atau galeri imgbox akan diambil semua fotonya, sampai batas maksimal foto. Untuk foto lain, klik "Tambah foto lain" dan tempel lagi.</li>
+<li>Periksa pratinjau di bawah kolom. Jika gambar muncul, link sudah benar.</li>
+<li>Catatan: album imgur harus publik (bukan privat). Jika foto dari link halaman tidak muncul, tempel Direct link atau kode HTML/BBCode-nya.</li></ol></details>`;
 
 /* ====== Input banyak foto ====== */
-const ipRow = (v = '') => `<div class="ip-row"><input type="text" value="${esc(v)}" placeholder="Tempel link imgbb atau kode HTML" aria-label="Link foto"><button type="button" class="linkbtn danger" data-act="ip-del">Hapus</button></div>`;
+const ipRow = (v = '') => `<div class="ip-row"><input type="text" value="${esc(v)}" placeholder="Tempel link imgbb / imgur / imgbox atau kode HTML / BBCode" aria-label="Link foto"><button type="button" class="linkbtn danger" data-act="ip-del">Hapus</button></div>`;
 function imgPicker(name, vals = [], { max = 8, single = false } = {}) {
   return `<div class="ip" data-ip="${name}" data-max="${single ? 1 : max}"><div class="ip-rows">${vals.length ? vals.map(ipRow).join('') : ipRow('')}</div>
     ${single ? '' : `<button type="button" class="btn ghost sm" data-act="ip-add">Tambah foto lain</button> <span class="muted small">maksimal ${max} foto</span>`}<div class="pv"></div></div>`;
@@ -369,9 +497,21 @@ const ipValues = ip => { const out = []; $$('.ip-row input', ip).forEach(i => ex
 const ipInvalid = ip => $$('.ip-row input', ip).some(i => i.value.trim() && !extractImages(i.value).length);
 function updateIp(ip) {
   const vals = ipValues(ip);
-  $$('.ip-row', ip).forEach(r => { const i = $('input', r); r.classList.toggle('bad', !!i.value.trim() && !extractImages(i.value).length); });
-  $('.pv', ip).innerHTML = (vals.length ? `<span>${vals.length} foto terdeteksi:</span>` + vals.map(u => `<img src="${esc(u)}" alt="" onerror="this.style.opacity=.3">`).join('') : '')
-    + (ipInvalid(ip) ? '<span class="warn">Ada isian yang bukan link gambar. Gunakan Direct link atau kode HTML dari imgbb.</span>' : '');
+  let loading = 0, bad = 0, failed = 0;
+  $$('.ip-row', ip).forEach(r => {
+    const i = $('input', r), t = i.value;
+    const pend = t.trim() ? pendingPages(t) : [];
+    if (pend.length) { loading++; pend.forEach(p => resolveImagePage(p).then(() => { if (ip.isConnected) updateIp(ip); })); }
+    const isBad = !!t.trim() && !pend.length && !extractImages(t).length;
+    if (isBad) { bad++; if (failedPages(t).length) failed++; }
+    r.classList.toggle('bad', isBad);
+  });
+  const msgs = [];
+  if (loading) msgs.push('<span>Mengambil foto dari link halaman...</span>');
+  if (bad) msgs.push(failed
+    ? '<span class="warn">Foto dari link halaman tidak bisa diambil otomatis (album mungkin privat atau layanan sedang membatasi). Coba tempel Direct link atau kode HTML/BBCode dari imgur/imgbox.</span>'
+    : '<span class="warn">Ada isian yang bukan link gambar. Gunakan link dari imgbb, imgur, atau imgbox (link halaman, Direct link, kode HTML, atau BBCode).</span>');
+  $('.pv', ip).innerHTML = (vals.length ? `<span>${vals.length} foto terdeteksi:</span>` + vals.map(u => `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.style.opacity=.3">`).join('') : '') + msgs.join('');
 }
 const initIps = root => $$('.ip', root).forEach(updateIp);
 
@@ -689,7 +829,7 @@ function viewProduct(id) {
   app.innerHTML = `<div class="backrow"><a class="btn ghost sm" href="/">Kembali ke beranda</a><span class="crumb"><a href="/">Produk</a> / ${esc(p.name)}</span></div>
   <div class="detail">
     <div class="gal"><button type="button" class="main main-image-open" data-act="image-fullscreen" aria-label="Buka gambar produk layar penuh">${imgTag(imgs[0], p.name)}</button>
-      ${imgs.length > 1 ? `<div class="thumbs">${imgs.map((u, i) => `<button class="${i ? '' : 'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Gambar ${i + 1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : ''}
+      ${imgs.length > 1 ? `<div class="thumbs">${imgs.map((u, i) => `<button class="${i ? '' : 'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Gambar ${i + 1}"><img src="${esc(u)}" alt="" referrerpolicy="no-referrer"></button>`).join('')}</div>` : ''}
     </div>
     <div class="info">
       <h1>${esc(p.name)}</h1>
@@ -726,7 +866,7 @@ function viewProduct(id) {
       </div>
       <div class="field"><label>Kode pesanan selesai (untuk lencana pembeli terverifikasi)</label><input name="orderCode" placeholder="BD-... (opsional)"></div>
       <div class="field"><label>Komentar</label><textarea name="comment" maxlength="800" placeholder="Ceritakan pengalaman Anda"></textarea></div>
-      <div class="field"><label>Foto (opsional): tempel link atau kode dari imgbb</label>${imgPicker('photos', [], { max: 4 })}${IMG_STEPS}</div>
+      <div class="field"><label>Foto (opsional): tempel link atau kode dari imgbb / imgur / imgbox</label>${imgPicker('photos', [], { max: 4 })}${IMG_STEPS}</div>
       <button class="btn" type="submit">Kirim ulasan</button>
     </form>
   </section>`;
@@ -736,7 +876,7 @@ function openImageFullscreen(src, alt='Gambar produk') {
   if (!src) return;
   document.querySelector('.image-lightbox')?.remove();
   const box=document.createElement('div'); box.className='image-lightbox'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true'); box.setAttribute('aria-label','Gambar layar penuh');
-  const image=document.createElement('img'); image.src=src; image.alt=alt; image.title='Klik untuk menutup';
+  const image=document.createElement('img'); image.referrerPolicy='no-referrer'; image.src=src; image.alt=alt; image.title='Klik untuk menutup';
   const close=document.createElement('button'); close.type='button'; close.className='image-lightbox-close'; close.setAttribute('aria-label','Tutup gambar'); close.textContent='×';
   const caption=document.createElement('div'); caption.className='image-lightbox-caption'; caption.textContent='Klik gambar atau × untuk menutup';
   box.append(image,close,caption); document.body.appendChild(box);
@@ -749,7 +889,7 @@ function setProductGalleryImages(urls, alt) {
   const main=clean[0] || (S.products.find(x=>x.id===location.pathname.split('/').pop())?.images||[])[0] || '';
   const mainBtn=$('.main-image-open',gal); if(mainBtn){mainBtn.innerHTML=imgTag(main,alt||'Gambar produk');mainBtn.dataset.src=main;}
   const old=$('.thumbs',gal); if(old) old.remove();
-  if(clean.length>1){gal.insertAdjacentHTML('beforeend',`<div class="thumbs">${clean.map((u,i)=>`<button type="button" class="${i?'':'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Foto variasi ${i+1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>`);}
+  if(clean.length>1){gal.insertAdjacentHTML('beforeend',`<div class="thumbs">${clean.map((u,i)=>`<button type="button" class="${i?'':'on'}" data-act="thumb" data-src="${esc(u)}" aria-label="Foto variasi ${i+1}"><img src="${esc(u)}" alt="" referrerpolicy="no-referrer"></button>`).join('')}</div>`);}
 }
 async function fillSellerBox(p) {
   if (!p.sellerId) return;
@@ -772,7 +912,8 @@ async function submitReview(form) {
   const rating = parseInt(f.get('rating')) || 0; const name = (f.get('name') || '').trim(); const orderCode = (f.get('orderCode') || '').toString().trim().toUpperCase();
   if (!name) return toast('Nama wajib diisi.');
   if (rating < 1) return toast('Pilih jumlah bintang terlebih dahulu.');
-  if (ipInvalid(ip)) return toast('Ada link foto yang tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  await resolveIps(form);
+  if (ipInvalid(ip)) return toast('Ada link foto yang tidak dikenali. Gunakan link dari imgbb, imgur, atau imgbox (link halaman, Direct link, kode HTML, atau BBCode).');
   let verified = false;
   if (orderCode) { try { const os = await getDoc(doc(db,'orders',orderCode)); if (os.exists()) { const od=os.data(); verified = od.productId===pid && ['Sampai','Selesai'].includes(od.status); if (!verified) return toast('Kode pesanan belum cocok dengan produk atau belum selesai.'); } else return toast('Kode pesanan tidak ditemukan.'); } catch(e) { return toast('Kode pesanan tidak dapat diverifikasi.'); } }
   const photos = ipValues(ip);
@@ -823,7 +964,7 @@ function viewCheckout(id) {
       <div class="field"><label>Detail lainnya</label><textarea name="detail" placeholder="Contoh: Blok / unit no., patokan"></textarea></div>
       ${S.settings.couponCode ? `<div class="field"><label>Kode kupon (opsional)</label><input name="coupon" id="coupon" placeholder="Masukkan ${esc(S.settings.couponCode)}"><p class="muted small">Kupon ${esc(S.settings.couponCode)} memberi diskon ${Number(S.settings.couponPercent)||10}% pada subtotal produk.</p></div>` : ''}
       <div class="field"><label class="check"><input type="checkbox" name="saveAddress" id="saveAddress" checked> Simpan alamat di perangkat ini untuk pembelian berikutnya</label></div>
-      ${S.settings.paymentInfo ? `<div class="note"><strong>Informasi pembayaran</strong><div class="pre">${esc(S.settings.paymentInfo)}</div></div><div class="field"><label>Tautan bukti pembayaran (opsional, imgbb)</label><input name="paymentProof" placeholder="https://i.ibb.co/..." inputmode="url"></div>` : ''}
+      ${S.settings.paymentInfo ? `<div class="note"><strong>Informasi pembayaran</strong><div class="pre">${esc(S.settings.paymentInfo)}</div></div><div class="field"><label>Tautan bukti pembayaran (opsional, link imgbb / imgur / imgbox)</label><input name="paymentProof" placeholder="https://i.ibb.co/..." inputmode="url"></div>` : ''}
       ${Object.entries(p.variants||{}).filter(([key,v])=>v && v.enabled && Array.isArray(v.options) && v.options.length).map(([key,v])=>`<div class="field variant-choice"><label class="req">${({color:'Warna',size:'Ukuran',model:'Model',custom:'Pilihan lainnya'})[key]||'Pilihan'}</label><select name="variant_${key}" required><option value="">Pilih ${({color:'warna',size:'ukuran',model:'model',custom:'pilihan'})[key]||'opsi'}</option>${v.options.map(opt=>`<option value="${esc(opt)}">${esc(opt)}</option>`).join('')}</select><div id="variantPhotos_${key}"></div></div>`).join('')}
       ${waField}
       <button class="btn" type="submit">Konfirmasi pesanan</button>
@@ -992,7 +1133,7 @@ function productForm(p, ctx) {
     <section class="variant-box"><h3>Variasi produk</h3><p class="muted small">Centang jenis variasi yang ingin diaktifkan. Pembeli wajib memilihnya sebelum memesan.</p>
       ${['Warna','Ukuran','Model','Lainnya'].map((label,i)=>{const key=['color','size','model','custom'][i], v=(p.variants||{})[key]||{};return `<div class="variant-editor" data-variant-editor="${key}"><label class="check"><input type="checkbox" name="variant_${key}_enabled" ${v.enabled?'checked':''}> Aktifkan pilihan ${label}</label><div class="field" style="margin:8px 0 0"><label>Daftar pilihan ${label.toLowerCase()} (pisahkan dengan koma atau baris baru)</label><textarea name="variant_${key}_options" placeholder="${i===0?'Hitam, Putih, Biru':i===1?'S, M, L, XL':i===2?'Model A, Model B':'Pilihan 1, Pilihan 2'}">${esc((v.options||[]).join('\n'))}</textarea></div><div class="variant-photo-editors" data-photo-editors="${key}"></div></div>`}).join('')}
     </section>
-    <div class="field"><label>Foto produk: tempel link imgbb atau kode HTML, tambah foto lain bila perlu</label>${imgPicker('images', p.images || [], { max: 8 })}${IMG_STEPS}</div>
+    <div class="field"><label>Foto produk: tempel link imgbb / imgur / imgbox atau kode HTML / BBCode, tambah foto lain bila perlu</label>${imgPicker('images', p.images || [], { max: 8 })}${IMG_STEPS}</div>
     <div class="field"><label>Deskripsi</label><textarea name="description" style="min-height:130px">${esc(p.description || '')}</textarea></div>
     <div class="field"><label class="check"><input type="checkbox" name="active" ${p.active === false ? '' : 'checked'}> Tampilkan di toko</label></div>
     <div class="actions"><button class="btn" type="submit">Simpan</button><button class="btn ghost" type="button" data-act="close">Batal</button></div>
@@ -1019,12 +1160,12 @@ function renderVariantPhotoEditors(root, existing = {}) {
 function renderVariantPhotoPreview(key, option) {
   const p = S.cur; const host = $(`#variantPhotos_${key}`); if (!host) return;
   const photos = p?.variants?.[key]?.photos?.[option] || [];
-  host.innerHTML = photos.length ? `<div class="variant-photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${photos.slice(0,3).map(src=>`<img src="${esc(src)}" alt="Foto ${esc(option)}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #ddd" onerror="this.style.display='none'">`).join('')}</div>` : '';
+  host.innerHTML = photos.length ? `<div class="variant-photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${photos.slice(0,3).map(src=>`<img src="${esc(src)}" alt="Foto ${esc(option)}" referrerpolicy="no-referrer" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #ddd" onerror="this.style.display='none'">`).join('')}</div>` : '';
 }
 async function saveProduct(form) {
   const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim(); const ctx = v('ctx');
   const price = parseInt(v('price')); if (!v('name') || isNaN(price) || price < 0) return toast('Nama dan harga wajib diisi.');
-  const ip = $('.ip[data-ip="images"]', form); if ($$('.ip', form).some(ipInvalid)) return toast('Ada link foto yang tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.')
+  await resolveIps(form); const ip = $('.ip[data-ip="images"]', form); if ($$('.ip', form).some(ipInvalid)) return toast('Ada link foto yang tidak dikenali. Gunakan link dari imgbb, imgur, atau imgbox (link halaman, Direct link, kode HTML, atau BBCode).')
   const stockRaw = v('stock');
   const discountRaw = v('discountPrice'); const discountPrice = discountRaw === '' ? null : Math.max(0, parseInt(discountRaw)||0);
   if (discountPrice !== null && discountPrice >= price) return toast('Harga diskon harus lebih rendah dari harga normal.');
@@ -1101,7 +1242,7 @@ function viewSeller() {
   if (!S.user) {
     app.innerHTML = `<div class="panel" style="max-width:560px;margin:10px auto">
       <h1>Jual di ${esc(S.settings.storeName)}</h1>
-      <p class="muted">Siapa saja bisa menjadi penjual. Masuk dengan akun Google, lengkapi profil toko, lalu tambahkan produk dengan cara upload yang sama seperti biasa (foto lewat link imgbb).</p>
+      <p class="muted">Siapa saja bisa menjadi penjual. Masuk dengan akun Google, lengkapi profil toko, lalu tambahkan produk dengan cara upload yang sama seperti biasa (foto lewat link imgbb, imgur, atau imgbox).</p>
       <p class="muted small">Pembeli tidak perlu akun. Login Google hanya untuk penjual dan untuk menyimpan favorit di akun.</p>
       <div class="actions"><button class="btn" data-act="gl-login">Masuk dengan Google</button><a class="btn ghost" href="/">Kembali ke beranda</a></div></div>`;
     return;
@@ -1142,7 +1283,7 @@ function renderSellerTab() {
     b.innerHTML = `<form class="panel" data-form="profile" style="max-width:640px"><h2>Profil</h2>
       <div style="margin-bottom:14px">${avatarHTML(pr.photo || S.user.photoURL, pr.name || S.user.displayName, 'lg')}</div>
       <div class="field"><label>Nama tampilan</label><input name="name" value="${esc(pr.name || S.user.displayName || '')}" required></div>
-      <div class="field"><label>Foto profil: tempel link imgbb atau kode HTML</label>${imgPicker('photo', pr.photo ? [pr.photo] : [], { single: true })}${IMG_STEPS}</div>
+      <div class="field"><label>Foto profil: tempel link imgbb / imgur / imgbox atau kode HTML / BBCode</label>${imgPicker('photo', pr.photo ? [pr.photo] : [], { single: true })}${IMG_STEPS}</div>
       ${pr.accountDisabled ? '<div class="note warn">Akun penjual dinonaktifkan oleh pengelola. Pilihan paket dikunci sampai pengelola mengaktifkan kembali akun.</div>' : `<div class="field"><label class="check"><input type="checkbox" name="isSeller" ${isSeller ? 'checked' : ''}> Saya ingin berjualan di ${esc(S.settings.storeName)}</label></div>`}
       <div id="sellerFields" class="${isSeller || (!pr.accountDisabled && (pr.planStatus==='pending' || pr.planStatus==='expired')) ? '' : 'hide'}">
         ${packageIsActive(pr) && !packageNeedsRenewal(pr) ? `<div class="note"><strong>Paket ${esc(pr.sellerPlanLabel || pr.sellerPlan || 'penjual')} aktif.</strong><br>Sisa waktu: <strong data-package-countdown="${Number(pr.subscriptionExpiresAt)||0}">${esc(formatCountdown(pr.subscriptionExpiresAt))}</strong><p class="seller-plan-note">Pilihan paket disembunyikan selama masa aktif. Pemberitahuan perpanjangan muncul saat masa paket tersisa 7 hari atau kurang.</p></div><input type="hidden" name="sellerPlan" value="${esc(pr.sellerPlan || 'trial')}">` : `<h3>${packageIsActive(pr) ? 'Perpanjang paket penjual' : 'Pilih paket penjual'}</h3><div class="plan-grid">
@@ -1152,7 +1293,7 @@ function renderSellerTab() {
           <label class="plan-card"><input type="radio" name="sellerPlan" value="yearly" ${pr.sellerPlan==='yearly' ? 'checked' : ''}><strong>Tahunan</strong><div class="plan-price">Rp400.000</div><span class="seller-plan-note">365 hari</span></label>
         </div><p class="seller-plan-note">Paket berbayar diproses melalui WhatsApp developer. Paket baru aktif setelah pengelola memverifikasi pembayaran.</p>`}
         <div class="field"><label class="req">Nama toko</label><input name="storeName" value="${esc(pr.storeName || '')}"></div>
-        <div class="field"><label>Logo brand toko: tempel link gambar atau kode HTML dari imgbb</label>${imgPicker('storeLogo', pr.storeLogo ? [pr.storeLogo] : [], { single: true })}${IMG_STEPS}</div>
+        <div class="field"><label>Logo brand toko: tempel link gambar atau kode HTML dari imgbb / imgur / imgbox</label>${imgPicker('storeLogo', pr.storeLogo ? [pr.storeLogo] : [], { single: true })}${IMG_STEPS}</div>
         <div class="field"><label class="req">Nomor WhatsApp penjual (pesanan dikirim ke sini)</label><input name="wa" type="tel" placeholder="08xxxxxxxxxx" value="${esc(pr.wa || '')}"></div>
         <div class="field"><label>Deskripsi toko</label><textarea name="bio" maxlength="500" placeholder="Ceritakan toko dan produk yang dijual">${esc(pr.bio || '')}</textarea></div>
          ${pr.storeName ? `<div class="note">URL profil toko dapat dibagikan di bio media sosial: <a href="/toko/${esc(S.user.uid)}">Lihat profil toko</a><div class="actions"><button type="button" class="btn ghost sm" data-act="copy-store-url" data-id="${esc(S.user.uid)}">Salin URL profil</button></div></div>` : ''}
@@ -1228,7 +1369,7 @@ Permintaan: ${plan === (S.profile.sellerPlan || '') ? 'perpanjangan' : 'ganti pa
 
 async function saveProfile(form) {
   const f = new FormData(form); const v = k => (f.get(k) || '').toString().trim();
-  const ip = $('.ip[data-ip="photo"]', form); const logoIp = $('.ip[data-ip="storeLogo"]', form); if (ipInvalid(ip) || (logoIp && ipInvalid(logoIp))) return toast('Link gambar tidak dikenali. Gunakan Direct link atau kode HTML dari imgbb.');
+  await resolveIps(form); const ip = $('.ip[data-ip="photo"]', form); const logoIp = $('.ip[data-ip="storeLogo"]', form); if (ipInvalid(ip) || (logoIp && ipInvalid(logoIp))) return toast('Link gambar tidak dikenali. Gunakan link dari imgbb, imgur, atau imgbox (link halaman, Direct link, kode HTML, atau BBCode).');
   const isSeller = S.profile?.accountDisabled ? false : (f.get('isSeller') === 'on');
   const wa = normPhone(v('wa'));
   if (isSeller) {
